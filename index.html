@@ -4820,7 +4820,7 @@ const CONFIG = {
   AUDIO_CS_MULT: 0.6,        // пока играет книга, время на задачи по информатике ×0.6
   TASK_GAP: 1.0,             // пауза между задачами
   FEEDBACK_TIME: 0.7,        // подсветка ответа
-  CORRECT_PROGRESS: 7,
+  CORRECT_PROGRESS: 9,
   CORRECT_CONC: 3,
   WRONG_PROGRESS: 1,
   WRONG_CONC: -8,
@@ -4857,15 +4857,15 @@ const CONFIG = {
   // девять привычек: только числа. Поведение — в URGE_HOOKS.
   // tickEvery/tickConc — штраф, пока окно висит необслуженным
   URGES: [
-    { id: 'reels',   label: 'Рилс в группу проекта', kind: 'window', fillTime: 45, resetCost: 4, overflowCost: 0,  concReset: 0,  concOverflow: -15, hotkey: '1', tickEvery: 4, tickConc: -3 },
-    { id: 'temki',   label: 'Темщики БП',            kind: 'window', fillTime: 80, resetCost: 4, overflowCost: 0,  concReset: 0,  concOverflow: -10, hotkey: '2', tickEvery: 6, tickConc: -2 },
-    { id: 'audio',   label: 'Война и мир',           kind: 'window', fillTime: 60, resetCost: 1, overflowCost: 0,  concReset: 0,  concOverflow: 0,   hotkey: '3', tickEvery: 0, tickConc: 0 },
-    { id: 'poem',    label: 'Стих про преподавателя', kind: 'window', fillTime: 70, resetCost: 5, overflowCost: 0,  concReset: 0,  concOverflow: -12, hotkey: '4', tickEvery: 5, tickConc: -2 },
-    { id: 'sleep',   label: 'Сон',                   kind: 'break',  fillTime: 90, resetCost: 8, overflowCost: 40, concReset: 35, concOverflow: 35,  hotkey: '5' },
-    { id: 'pushups', label: 'Доказать мужское',      kind: 'break',  fillTime: 75, resetCost: 5, overflowCost: 25, concReset: 0,  concOverflow: -20, hotkey: '6' },
-    { id: 'water',   label: 'Попить',                kind: 'break',  fillTime: 75, resetCost: 2, overflowCost: 10, concReset: 12, concOverflow: -8,  hotkey: '7' },
-    { id: 'chair',   label: 'Ёрзанье',               kind: 'break',  fillTime: 50, resetCost: 2, overflowCost: 12, concReset: 0,  concOverflow: -10, hotkey: ' ' },
-    { id: 'air',     label: 'Душно',                 kind: 'break',  fillTime: 65, resetCost: 3, overflowCost: 15, concReset: 0,  concOverflow: -25, hotkey: '8' },
+    { id: 'reels',   label: 'Рилс в группу проекта', kind: 'window', fillTime: 52, resetCost: 4, overflowCost: 0,  concReset: 0,  concOverflow: -15, hotkey: '1', tickEvery: 4, tickConc: -3 },
+    { id: 'temki',   label: 'Темщики БП',            kind: 'window', fillTime: 92, resetCost: 4, overflowCost: 0,  concReset: 0,  concOverflow: -10, hotkey: '2', tickEvery: 6, tickConc: -2 },
+    { id: 'audio',   label: 'Война и мир',           kind: 'window', fillTime: 69, resetCost: 1, overflowCost: 0,  concReset: 0,  concOverflow: 0,   hotkey: '3', tickEvery: 0, tickConc: 0 },
+    { id: 'poem',    label: 'Стих про преподавателя', kind: 'window', fillTime: 80, resetCost: 5, overflowCost: 0,  concReset: 0,  concOverflow: -12, hotkey: '4', tickEvery: 5, tickConc: -2 },
+    { id: 'sleep',   label: 'Сон',                   kind: 'break',  fillTime: 103, resetCost: 8, overflowCost: 40, concReset: 35, concOverflow: 35,  hotkey: '5' },
+    { id: 'pushups', label: 'Доказать мужское',      kind: 'break',  fillTime: 86, resetCost: 5, overflowCost: 25, concReset: 0,  concOverflow: -20, hotkey: '6' },
+    { id: 'water',   label: 'Попить',                kind: 'break',  fillTime: 86, resetCost: 2, overflowCost: 10, concReset: 12, concOverflow: -8,  hotkey: '7' },
+    { id: 'chair',   label: 'Ёрзанье',               kind: 'break',  fillTime: 57, resetCost: 2, overflowCost: 12, concReset: 0,  concOverflow: -10, hotkey: ' ' },
+    { id: 'air',     label: 'Душно',                 kind: 'break',  fillTime: 75, resetCost: 3, overflowCost: 15, concReset: 0,  concOverflow: -25, hotkey: '8' },
   ],
 };
 
