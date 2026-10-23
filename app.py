@@ -26,6 +26,13 @@ def three():
     return send_from_directory(ROOT, "three.min.js")
 
 
+@app.route("/models/list.json")
+def models_list():
+    # игра грузит только существующие модели — без 404 в консоли
+    files = sorted(f.name for f in (ROOT / "models").glob("*.glb"))
+    return {"files": files}
+
+
 @app.route("/models/<path:name>")
 def models(name):
     return send_from_directory(ROOT / "models", name)

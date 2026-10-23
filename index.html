@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>МИША НЕ МОЖЕТ УЧИТЬСЯ</title>
+<link rel="icon" href="data:,">
 <style>
   :root {
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -6562,9 +6563,15 @@ function applyCamera(now) {
 function tryLoadModels() {
   if (typeof window.GLTFLoader !== 'function') { console.info('GLTFLoader недоступен — остаёмся на примитивах'); return; }
   if (location.protocol === 'file:') { console.info('file:// — браузер не даст загрузить models/*.glb, остаёмся на примитивах. Для моделей: python -m http.server'); return; }
+  // сервер (app.py) отдаёт список моделей; без списка пробуем всё
+  fetch('models/list.json').then(r => r.ok ? r.json() : null).catch(() => null)
+    .then(list => loadSlots(list && Array.isArray(list.files) ? new Set(list.files.map(f => 'models/' + f)) : null));
+}
+function loadSlots(available) {
   const loader = new window.GLTFLoader();
   const targets = { room: S.room, desk: S.desk, chair: S.chair, laptop: S.laptop, phone: S.phone, glass: S.glass, window: S.window, misha: S.misha.root };
   for (const slot of SLOTS) {
+    if (available && !available.has(slot.file)) continue;
     loader.load(slot.file, (gltf) => {
       try { replaceWithModel(slot, gltf, targets[slot.key]); console.info('модель загружена:', slot.file); }
       catch (e) { console.warn('модель не встала:', slot.file, e); }
