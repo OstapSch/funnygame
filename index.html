@@ -56,6 +56,26 @@
   #pushHud.bump .n { animation: bump .18s; }
   @keyframes bump { from { transform: scale(1.35); } to { transform: scale(1); } }
 
+  /* полная шкала: отсчёт до поражения */
+  #critWarn { position: fixed; left: 50%; top: 13vh; transform: translateX(-50%); z-index: 8; pointer-events: none; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  #critWarn .cw { display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border-radius: 14px; background: rgba(20,22,30,.85); color: #fff; font: 700 17px var(--font); box-shadow: 0 0 0 3px var(--c), 0 8px 26px rgba(0,0,0,.45); animation: cwPulse .5s infinite alternate; }
+  #critWarn .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--c); display: flex; align-items: center; justify-content: center; }
+  #critWarn .ic svg { width: 20px; height: 20px; }
+  #critWarn .tm { font: 900 30px var(--font); color: #ff453a; min-width: 30px; text-align: center; }
+  #critWarn kbd { background: #f4f4f7; color: #1c1c1e; border-radius: 5px; padding: 1px 7px; font: 800 15px var(--font); box-shadow: 0 2px 0 #9a9aa5; }
+  @keyframes cwPulse { from { transform: scale(1); } to { transform: scale(1.05); } }
+  #critVig { position: fixed; inset: 0; pointer-events: none; z-index: 4; opacity: 0; transition: opacity .3s; box-shadow: inset 0 0 120px 30px rgba(255,30,30,.75); }
+  #critVig.on { animation: vig .5s infinite alternate; }
+  @keyframes vig { from { opacity: .35; } to { opacity: .9; } }
+  /* «МИША ПРОИГРАЛ» */
+  #loseFlash { position: fixed; inset: 0; z-index: 9; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; opacity: 0; color: #fff; background: radial-gradient(ellipse at center, rgba(0,0,0,.25), rgba(120,0,0,.75)); }
+  #loseFlash.show { animation: loseIn 2.4s forwards; }
+  #loseFlash .lf-ic { width: 120px; height: 120px; border-radius: 50%; background: var(--c); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 60px var(--c); }
+  #loseFlash .lf-ic svg { width: 70px; height: 70px; }
+  #loseFlash .lf-t { font: 900 72px var(--font); letter-spacing: 3px; margin-top: 18px; text-shadow: 0 6px 30px rgba(0,0,0,.6); }
+  #loseFlash .lf-s { font: 700 26px var(--font); opacity: .95; margin-top: 6px; }
+  @keyframes loseIn { 0% { opacity: 0; transform: scale(1.4); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
+
   .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10; }
   .overlay.show { display: flex; }
   #startOv { background: radial-gradient(ellipse at center, rgba(20,24,36,.25), rgba(10,12,20,.75)); cursor: pointer; }
@@ -94,13 +114,17 @@
 <div class="hudCol" id="hudR"><div class="hudTitle">ТЕЛО</div></div>
 <div id="toast"><div class="t"></div><div class="sub"></div><div class="pb"><i></i></div></div>
 <div id="busyMsg">Миша занят</div>
+<div id="critVig"></div>
+<div id="critWarn"></div>
+<div id="loseFlash"></div>
 <div id="pushHud"><div class="n">0 / 10</div><div class="s"></div><div class="pb"><i></i></div></div>
 
 <div class="overlay show" id="startOv">
   <div class="titleCard">
     <h1>МИША <span>НЕ МОЖЕТ</span> УЧИТЬСЯ</h1>
     <p>Экзамены AS Level: математика, физика, информатика. На подготовку — шесть минут.</p>
-    <p>У Миши девять привычек. Их шкалы — по бокам экрана. Полная шкала — беда.</p>
+    <p>У Миши девять привычек. Их шкалы — по бокам экрана.</p>
+    <p><b>Шкала заполнилась — у тебя 6 секунд. Не успел — Миша проиграл.</b></p>
     <p class="keys">Сбрасывай привычки сам: 1–8 и Пробел (клавиша подписана под шкалой) · Tab — телефон · Esc — пауза</p>
     <div class="go">Кликни, чтобы начать</div>
   </div>
@@ -4988,7 +5012,7 @@ window.RoundedBoxGeometry = RoundedBoxGeometry;
      3. УТИЛИТЫ
      4. ЗВУК (WebAudio)
      5. СОСТОЯНИЕ (game)
-     6. ПОЗЫВЫ (class Urge) — шкалы копятся, действие запускает только игрок
+     6. ПОЗЫВЫ (class Urge) — шкала дошла до 100% и не спасли за 6 с — проигрыш
      7. ДЕЙСТВИЯ МИШИ (занятость, телефон, Safari, перерывы, отжимания)
      8. УЧЁБА (задачи, «вывезу на понимании»)
      9. ОКНА И УВЕДОМЛЕНИЯ
@@ -5028,7 +5052,7 @@ const CONFIG = {
   AUDIO_CS_MULT: 0.6,        // пока играет книга, время на Computer Science ×0.6
   TASK_GAP: 1.0,
   FEEDBACK_TIME: 0.8,
-  CORRECT_PROGRESS: 6.5,
+  CORRECT_PROGRESS: 5.5,
   CORRECT_CONC: 3,
   WRONG_PROGRESS: 1,
   WRONG_CONC: -8,
@@ -5041,29 +5065,28 @@ const CONFIG = {
   BLUFF_LOSE_CONC: -25,
   BLUFF_COOLDOWN: 30,
 
-  // полные шкалы мешают учиться: каждая срезает прибавку за ответ
-  CRIT_FOCUS_PENALTY: 0.2,   // −20% за каждую полную шкалу
-  CRIT_FOCUS_MIN: 0.25,      // но не ниже 25%
-  CRIT_BLOCK: 3,             // столько полных шкал сразу — задачи вообще не идут
-  FORGET_RATE: 0.05,         // …и выученное выветривается, % в секунду
+  // ПРАВИЛО ПОРАЖЕНИЯ: шкала дошла до 100% → тревога и отсчёт.
+  // Не нажал клавишу привычки за CRIT_GRACE секунд — Миша проиграл.
+  CRIT_GRACE: 6,             // секунд на спасение (0 — проигрыш сразу)
+  RESCUE_MULT: 1.5,          // спасение в последний момент длится дольше обычного сброса
   FILL_SCALE: 1.5,           // общий множитель fillTime: больше — привычки копятся медленнее (легче)
 
   // эффекты привычек
   SLEEP_CONC: 35,
   WATER_CONC: 12,
   WATER_CHAIR_ADD: 30,
-  AUDIO_OVERFLOW_PROGRESS: -8,
   SLEEP_WINDOW_MULT: 0.625,  // окно открыто → сон копится в 1.6 раза быстрее
   POEM_SECOND_AFTER: 20,
   POEM_SHOW_TIME: 2,
   PUSHUP_REPS: 10,
-  PUSHUP_TIME: 5,            // на переполнении: 10 раз за 5 секунд
+  PUSHUP_TIME: 5,            // спасение с полной шкалы: 10 раз за 5 секунд, иначе проигрыш
   PUSHUP_EARLY_MAX: 15,      // заранее: без таймера, но не дольше
   CHAIR_MISS_FROM: 70,
   CHAIR_MISS_MIN: 4,
   CHAIR_MISS_MAX: 25,
-  CHAIR_AFTER_OVERFLOW: 5,
-  MICROSLEEP_EVERY: 4,       // сон на пределе: глаза закрываются сами
+  CHAIR_AFTER_OVERFLOW: 5,   // после спасения с полной шкалы клики ещё мажут
+  MICROSLEEP_FROM: 90,       // сон выше этого — глаза закрываются сами
+  MICROSLEEP_EVERY: 4,
   MICROSLEEP_LEN: 1.2,
   WARN_NOTIFY: 80,           // уведомление «шкала почти полная»
   WARN_ALARM: 85,            // тревожный тон
@@ -5074,22 +5097,19 @@ const CONFIG = {
   CAM_TRANSITION: 0.8,
 
   // девять привычек. Действие запускает ТОЛЬКО игрок (hotkey).
-  //   fillTime     — секунд до полной шкалы (делится на difficulty)
-  //   resetCost    — сколько секунд стоит действие, если успел до 100%
-  //   overflowCost — сколько стоит, если шкала уже была полной
-  //   concOverflow — удар по концентрации в момент заполнения
-  //   critDrain    — концентрация в секунду, пока шкала полная
-  //   tickEvery/tickConc — периодический штраф полной шкалы окна
+  //   fillTime  — секунд до полной шкалы (делится на difficulty и умножается на FILL_SCALE)
+  //   resetCost — сколько секунд стоит действие (спасение с полной шкалы — ×RESCUE_MULT)
+  //   tickEvery — как часто чат подгоняет, пока шкала полная
   URGES: [
-    { id: 'reels',   label: 'Рилс',   kind: 'window', fillTime: 45, resetCost: 4, overflowCost: 4,  concReset: 0,  concOverflow: -15, critDrain: 0,    hotkey: '1', tickEvery: 4, tickConc: -3, color: '#ff375f' },
-    { id: 'temki',   label: 'Темка',  kind: 'window', fillTime: 80, resetCost: 4, overflowCost: 4,  concReset: 0,  concOverflow: -10, critDrain: 0,    hotkey: '2', tickEvery: 6, tickConc: -2, color: '#ff9f0a' },
-    { id: 'audio',   label: 'Книга',  kind: 'window', fillTime: 60, resetCost: 1, overflowCost: 1,  concReset: 0,  concOverflow: 0,   critDrain: 0,    hotkey: '3', tickEvery: 0, tickConc: 0,  color: '#bf5af2' },
-    { id: 'poem',    label: 'Стих',   kind: 'window', fillTime: 70, resetCost: 5, overflowCost: 5,  concReset: 0,  concOverflow: -12, critDrain: 0,    hotkey: '4', tickEvery: 5, tickConc: -2, color: '#ffd60a' },
-    { id: 'sleep',   label: 'Сон',    kind: 'break',  fillTime: 90, resetCost: 8, overflowCost: 40, concReset: 35, concOverflow: 0,   critDrain: -1.5, hotkey: '5', tickEvery: 0, tickConc: 0,  color: '#5e5ce6' },
-    { id: 'pushups', label: 'Отжим.', kind: 'break',  fillTime: 75, resetCost: 5, overflowCost: 25, concReset: 0,  concOverflow: -20, critDrain: -1,   hotkey: '6', tickEvery: 5, tickConc: 0,  color: '#ff453a' },
-    { id: 'water',   label: 'Вода',   kind: 'break',  fillTime: 75, resetCost: 2, overflowCost: 10, concReset: 12, concOverflow: -8,  critDrain: -1.5, hotkey: '7', tickEvery: 0, tickConc: 0,  color: '#64d2ff' },
-    { id: 'chair',   label: 'Стул',   kind: 'break',  fillTime: 50, resetCost: 2, overflowCost: 12, concReset: 0,  concOverflow: -10, critDrain: -1,   hotkey: ' ', tickEvery: 0, tickConc: 0,  color: '#c49a6c' },
-    { id: 'air',     label: 'Окно',   kind: 'break',  fillTime: 65, resetCost: 4, overflowCost: 15, concReset: 0,  concOverflow: -25, critDrain: -2,   hotkey: '8', tickEvery: 0, tickConc: 0,  color: '#30d158' },
+    { id: 'reels',   label: 'Рилс',   kind: 'window', fillTime: 45, resetCost: 4, concReset: 0,  hotkey: '1', tickEvery: 2, color: '#ff375f' },
+    { id: 'temki',   label: 'Темка',  kind: 'window', fillTime: 80, resetCost: 4, concReset: 0,  hotkey: '2', tickEvery: 2, color: '#ff9f0a' },
+    { id: 'audio',   label: 'Книга',  kind: 'window', fillTime: 60, resetCost: 1, concReset: 0,  hotkey: '3', tickEvery: 0, color: '#bf5af2' },
+    { id: 'poem',    label: 'Стих',   kind: 'window', fillTime: 70, resetCost: 5, concReset: 0,  hotkey: '4', tickEvery: 0, color: '#ffd60a' },
+    { id: 'sleep',   label: 'Сон',    kind: 'break',  fillTime: 90, resetCost: 8, concReset: 35, hotkey: '5', tickEvery: 0, color: '#5e5ce6' },
+    { id: 'pushups', label: 'Отжим.', kind: 'break',  fillTime: 75, resetCost: 5, concReset: 0,  hotkey: '6', tickEvery: 2, color: '#ff453a' },
+    { id: 'water',   label: 'Вода',   kind: 'break',  fillTime: 75, resetCost: 2, concReset: 12, hotkey: '7', tickEvery: 0, color: '#64d2ff' },
+    { id: 'chair',   label: 'Стул',   kind: 'break',  fillTime: 50, resetCost: 2, concReset: 0,  hotkey: ' ', tickEvery: 0, color: '#c49a6c' },
+    { id: 'air',     label: 'Окно',   kind: 'break',  fillTime: 65, resetCost: 4, concReset: 0,  hotkey: '8', tickEvery: 0, color: '#30d158' },
   ],
 };
 
@@ -5194,6 +5214,19 @@ const POSTS = [
   { text: 'Все формулы по физике одним листом', art: 'formulas' },
   { text: 'Как не спать перед экзаменом: тред', art: 'sleepy' },
 ];
+// Чем заканчивается вечер, если шкала заполнилась и Мишу не спасли
+const LOSE_ENDINGS = {
+  reels:   { title: 'Миша ушёл в рилсы', text: 'Группа проекта удалила его из чата. Он открыл рилсы «на минутку» — и очнулся в два ночи.' },
+  temki:   { title: 'Темщики победили', text: 'Миша пошёл искать одну темку и нашёл сорок. Учебник так и остался закрытым.' },
+  audio:   { title: '«Война и мир» обиделась', text: 'Книга так долго стояла на паузе, что Миша решил прочитать её целиком. Сегодня. Вместо экзаменов.' },
+  poem:    { title: 'Миша стал поэтом', text: 'Стих про преподавателя вырос в поэму на сорок строф. Экзамены подождут.' },
+  sleep:   { title: 'Миша вырубился', text: 'Лицом в клавиатуру. На экране — бесконечное «ддддддд». Проснулся в 7:40.' },
+  pushups: { title: 'Чат победил', text: 'Миша так и не отжался, и чат ему это припомнил. Ушёл доказывать — отжимается до сих пор.' },
+  pushupsFail: { title: 'Не смог десять', text: 'Чат записал видео. Миша ушёл тренироваться — и тренируется до утра.' },
+  water:   { title: 'Поход за водой', text: 'Миша пошёл на кухню попить и застрял у холодильника до утра.' },
+  chair:   { title: 'Стул победил', text: 'Миша ёрзал, ёрзал — и уехал на стуле в коридор.' },
+  air:     { title: 'Духота победила', text: 'Миша сел на подоконник «подышать минутку» и задремал.' },
+};
 const BOOK_QUOTES = [
   '«Ну что, князь. Генуя и Лукка стали не больше, как поместьями фамилии Бонапарте…»',
   '«Нет величия там, где нет простоты, добра и правды».',
@@ -5253,6 +5286,8 @@ const SFX = {
   creak() { this.tone(180, 0.25, 'sawtooth', 0.08, 0, 140); this.tone(260, 0.18, 'sawtooth', 0.05, 0.1, 200); },
   notif() { this.tone(988, 0.08, 'sine', 0.2); this.tone(1319, 0.12, 'sine', 0.18, 0.07); },
   deny() { this.tone(200, 0.12, 'square', 0.1); },
+  tick() { this.tone(1100, 0.07, 'square', 0.14); },
+  lose() { [392, 370, 349, 262].forEach((f, i) => this.tone(f, i === 3 ? 0.9 : 0.32, 'sawtooth', 0.14, i * 0.34, i === 3 ? 180 : 0)); },
   setHum(level) { if (!this.ctx) return; this.humGain.gain.setTargetAtTime(this.muted ? 0 : level * 0.35, this.ctx.currentTime, 0.3); },
   toggleMute() { this.muted = !this.muted; if (this.muted) this.setHum(0); },
 };
@@ -5309,91 +5344,96 @@ function newGame(opts = {}) {
 }
 
 /* =====================================================================
-   6. ПОЗЫВЫ — шкала копится; на 100% привычка «горит» и штрафует,
-      пока игрок сам не нажмёт её клавишу. Само ничего не запускается.
+   6. ПОЗЫВЫ — шкала копится сама. Сброс — только клавишей игрока.
+      Шкала дошла до 100% → тревога и отсчёт CRIT_GRACE секунд.
+      Не успел нажать — Миша проиграл (как во FNAF: не уследил — всё).
    ===================================================================== */
-function critNotify(u, text) { notify(u.label + ' — на пределе', text, u.color, u.id, () => urgeKey(u.id), keyName(u.hotkey)); }
+function critNotify(u) { notify(u.label + ' — шкала полная!', u.critText + '. ' + CONFIG.CRIT_GRACE + ' с, чтобы спасти Мишу', u.color, u.id, () => urgeKey(u.id), keyName(u.hotkey)); }
 function warnNotify(u, text) { notify(u.label + ' — шкала почти полная', text, u.color, u.id, () => urgeKey(u.id), keyName(u.hotkey)); }
 
 const URGE_HOOKS = {
   reels: {
-    canFill: () => !(game.action && game.action.urge === 'reels'),
     warnText: 'группа ждёт рилс — возьми телефон',
+    critText: 'группа проекта в ярости',
     flavor: { 50: () => chatMsg('vr', pick(TEAM, game.rnd), REELS_ASK[0]), 75: () => chatMsg('vr', TEAM[0], REELS_ASK[1]) },
     onReset: () => startPhone(),
-    onCrit: (u) => { chatMsg('vr', TEAM[0], 'МИША. РИЛС. СЕЙЧАС.'); critNotify(u, 'чат проекта взрывается, концентрация тает'); },
+    onCrit: () => chatMsg('vr', TEAM[0], 'МИША. РИЛС. СЕЙЧАС.'),
     onTick: () => chatMsg('vr', pick(TEAM, game.rnd), pick(REELS_SPAM, game.rnd)),
   },
   temki: {
-    canFill: () => !(game.action && game.action.urge === 'temki'),
     warnText: 'нужна свежая темка — открой Safari',
+    critText: 'темщики требуют темку',
     flavor: { 75: () => { if (game.wins.temki.open) chatMsg('temki', TEAM[2], 'кто-нибудь видел темку?'); } },
     onReset: () => startSafari(),
-    onCrit: (u) => { openWin('temki'); chatMsg('temki', TEAM[2], 'миша, где темка?'); critNotify(u, 'темщики ждут, найди темку в Safari'); },
+    onCrit: () => { openWin('temki'); chatMsg('temki', TEAM[2], 'миша, где темка?'); },
     onTick: () => chatMsg('temki', pick(TEAM, game.rnd), pick(TEMKI_SPAM, game.rnd)),
   },
   audio: {
     canFill: () => !game.audioPlaying,
-    warnText: '«Война и мир» на паузе слишком долго',
+    warnText: '«Война и мир» на паузе слишком долго — включи [3]',
+    critText: 'аудиокнига на паузе слишком долго',
     onReset: () => toggleAudio(),
-    onCrit: (u) => {
-      notify('Книги', 'Ты обещал дослушать «Войну и мир». Прогресс −8%', u.color, u.id, () => urgeKey('audio'), '3');
-      addProgress(CONFIG.AUDIO_OVERFLOW_PROGRESS);
-      u.clear(); // копится снова
-    },
   },
   poem: {
     canFill: () => !game.wins.notes1.open && !game.wins.notes2.open,
     warnText: 'в голову лезет стих про преподавателя',
+    critText: 'стих рвётся наружу — выбери строчку',
     onReset: () => openNotes('notes1', false),
-    onCrit: (u) => { openNotes('notes1', true); },
-    tickActive: () => (game.wins.notes1.open && game.wins.notes1.chosen < 0) || (game.wins.notes2.open && game.wins.notes2.chosen < 0),
+    onCrit: () => openNotes('notes1', true),          // заметки открываются сами
+    critServiced: () => game.wins.notes1.open && game.wins.notes1.chosen >= 0,
   },
   sleep: {
     fillMult: () => game.windowOpen ? CONFIG.SLEEP_WINDOW_MULT : 1,
     warnText: 'глаза слипаются — пора вздремнуть на кровати',
+    critText: 'Миша засыпает прямо за столом',
     onReset: (u) => startBreak('sleep', u.crit),
-    onCrit: (u) => critNotify(u, 'Миша засыпает прямо за столом! Жми 5'),
   },
   pushups: {
     warnText: 'чат подначивает отжаться',
+    critText: 'чат требует 10 отжиманий за 5 секунд',
     flavor: { 45: () => chatMsg('vr', TEAM[0], PUSHUP_TAUNTS[0]), 75: () => chatMsg('vr', TEAM[2], PUSHUP_TAUNTS[1]) },
     onReset: (u) => startPushups(u.crit),
-    onCrit: (u) => { chatMsg('vr', TEAM[0], PUSHUP_TAUNTS[2]); critNotify(u, 'докажи: 10 отжиманий за 5 секунд'); },
+    onCrit: () => chatMsg('vr', TEAM[0], PUSHUP_TAUNTS[2]),
     onTick: () => chatMsg('vr', pick(TEAM, game.rnd), pick(['ну что, слабо?', 'ждём видео отжиманий', 'миша боится'], game.rnd)),
   },
   water: {
     warnText: 'горло пересохло — стакан слева',
+    critText: 'голова раскалывается без воды',
     onReset: (u) => startBreak('water', u.crit),
-    onCrit: (u) => critNotify(u, 'голова раскалывается, срочно попить'),
   },
   chair: {
     warnText: 'спина затекла — клики начинают мазать',
+    critText: 'Миша ёрзает, клики летят мимо',
     onReset: (u) => startBreak('chair', u.crit),
-    onCrit: (u) => critNotify(u, 'Миша ёрзает — клики летят мимо'),
   },
   air: {
     canFill: () => !game.windowOpen,
     warnText: 'душно — открой окно',
+    critText: 'дышать нечем',
     onReset: (u) => startBreak('air', u.crit),
-    onCrit: (u) => critNotify(u, 'дышать нечем, голова ватная'),
   },
 };
 
 class Urge {
   constructor(cfg) {
     Object.assign(this, cfg, URGE_HOOKS[cfg.id]);
-    this.value = 0; this.crit = false; this.critT = 0; this.tickT = 0;
+    this.value = 0; this.crit = false; this.critT = 0; this.tickT = 0; this.paused = false;
     this.flavored = {}; this.warned = false; this.alarmed = false;
   }
+  // игрок уже спасает эту привычку
+  serviced() { return (game.action && game.action.urge === this.id) || (this.critServiced ? this.critServiced() : false); }
+  graceLeft() { return Math.max(0, CONFIG.CRIT_GRACE - this.critT); }
   update(dt) {
     if (this.crit) {
+      if (this.serviced()) { this.paused = false; return; }
+      // Миша занят другим делом — отсчёт стоит, иначе долгое действие было бы приговором
+      if (game.action) { this.paused = true; return; }
+      this.paused = false;
+      const before = Math.ceil(this.graceLeft());
       this.critT += dt;
-      if (this.critDrain) addConc(this.critDrain * dt, true);
-      if (this.tickEvery > 0 && (!this.tickActive || this.tickActive())) {
-        this.tickT += dt;
-        while (this.tickT >= this.tickEvery) { this.tickT -= this.tickEvery; if (this.onTick) this.onTick(this); addConc(this.tickConc); }
-      }
+      if (Math.ceil(this.graceLeft()) < before) SFX.tick();
+      if (this.tickEvery > 0 && this.onTick) { this.tickT += dt; while (this.tickT >= this.tickEvery) { this.tickT -= this.tickEvery; this.onTick(this); } }
+      if (this.critT >= CONFIG.CRIT_GRACE) loseGame(this.id);
       return;
     }
     if (game.action && game.action.urge === this.id) return; // обслуживается
@@ -5406,13 +5446,15 @@ class Urge {
     if (this.value >= 100) this.goCrit();
   }
   goCrit() {
-    this.value = 100; this.crit = true; this.critT = 0; this.tickT = 0;
+    this.value = 100; this.crit = true; this.critT = 0; this.tickT = 0; this.paused = false;
     distraction();
-    if (this.id !== 'pushups') addConc(this.concOverflow); // штраф отжиманий — за проваленный вызов
-    this.onCrit(this);
+    SFX.alarm();
+    if (this.onCrit) this.onCrit(this);
+    critNotify(this);
+    if (CONFIG.CRIT_GRACE <= 0 && !this.serviced()) loseGame(this.id);
     markDirty();
   }
-  clear() { this.value = 0; this.crit = false; this.critT = 0; this.tickT = 0; this.flavored = {}; this.warned = false; this.alarmed = false; markDirty(); }
+  clear() { this.value = 0; this.crit = false; this.critT = 0; this.tickT = 0; this.paused = false; this.flavored = {}; this.warned = false; this.alarmed = false; markDirty(); }
 }
 
 // Игрок жмёт клавишу привычки
@@ -5511,7 +5553,7 @@ function startBreak(id, overflow) {
   const u = game.urges[id], def = BREAK_DEFS[id];
   const a = {
     kind: 'break', urge: id, overflow, cam: 'HEAD', anim: def.anim,
-    dur: overflow ? u.overflowCost : u.resetCost,
+    dur: overflow ? u.resetCost * CONFIG.RESCUE_MULT : u.resetCost,
     update: def.update,
     finish: (a) => { if (def.finish) def.finish(a); u.clear(); },
   };
@@ -5541,15 +5583,11 @@ function startPushups(overflow) {
       const p = game.pushup;
       p.pulse = Math.max(0, p.pulse - dt * 2.8);
       if (a.t < p.down) return;
-      if (p.done || p.failed) {
-        p.endT += dt;
-        const hold = p.failed ? Math.max(p.up, u.overflowCost - a.t + p.endT) : p.up;
-        if (p.endT >= hold) endAction();
-        return;
-      }
+      if (p.failed) { p.endT += dt; if (p.endT >= 1.2) loseGame('pushupsFail'); return; } // не смог — проигрыш
+      if (p.done) { p.endT += dt; if (p.endT >= p.up) endAction(); return; }
       p.t += dt;
       if (p.t >= p.limit) {
-        if (overflow) { p.failed = true; addConc(u.concOverflow); chatMsg('vr', TEAM[0], 'ну я же говорил'); }
+        if (overflow) { p.failed = true; chatMsg('vr', TEAM[0], 'ну я же говорил'); SFX.chordDown(); }
         else p.done = true; // заранее — просто устал, сколько сделал, столько сделал
         markDirty();
       }
@@ -5696,9 +5734,8 @@ function updateNotes(dt) {
    8. УЧЁБА
    ===================================================================== */
 function studyBlocked() { return game.wins.notes1.open || game.wins.notes2.open || game.wins.safari.open; }
-function tooDistracted() { return critCount() >= CONFIG.CRIT_BLOCK; }
 function canStudy() {
-  return game.phase === 'play' && !game.action && game.cam.to === 'DESK' && game.cam.t >= 1 && !studyBlocked() && game.focus === 'study' && !tooDistracted();
+  return game.phase === 'play' && !game.action && game.cam.to === 'DESK' && game.cam.t >= 1 && !studyBlocked() && game.focus === 'study';
 }
 function nextTask() {
   if (!game.deck.length) game.deck = shuffle(TASKS.map((_, i) => i), game.rnd);
@@ -5712,15 +5749,11 @@ function nextTask() {
   };
   markDirty();
 }
-// сколько шкал сейчас полные → во сколько раз урезана прибавка за ответ
-function critCount() { let n = 0; for (const id in game.urges) if (game.urges[id].crit) n++; return n; }
-function focusMult() { return Math.max(CONFIG.CRIT_FOCUS_MIN, 1 - CONFIG.CRIT_FOCUS_PENALTY * critCount()); }
 function taskMult() { return game.task && game.task.q.subject === 'cs' && game.audioPlaying ? CONFIG.AUDIO_CS_MULT : 1; }
 function taskLimit() { return game.task ? game.task.base * taskMult() : 1; }
 
 function updateStudy(dt) {
   if (game.bluffCD > 0) game.bluffCD = Math.max(0, game.bluffCD - dt);
-  if (tooDistracted() && game.progress > 0) { game.progress = Math.max(0, game.progress - CONFIG.FORGET_RATE * dt); game.forgetting = true; } else game.forgetting = false;
   if (!canStudy()) return;
   game.streak += dt;
   const t = game.task;
@@ -5737,9 +5770,8 @@ function answer(i) {
   const t = game.task;
   if (!t || t.state !== 'ask' || !canStudy()) return;
   t.chosen = i; t.fbT = 0;
-  const m = focusMult();
-  if (i === t.correct) { t.state = 'right'; t.gain = CONFIG.CORRECT_PROGRESS * m; addProgress(t.gain); addConc(CONFIG.CORRECT_CONC); game.stats.correct++; SFX.chordUp(); }
-  else { t.state = 'wrong'; addProgress(CONFIG.WRONG_PROGRESS * m); addConc(CONFIG.WRONG_CONC); game.stats.failed++; SFX.chordDown(); }
+  if (i === t.correct) { t.state = 'right'; addProgress(CONFIG.CORRECT_PROGRESS); addConc(CONFIG.CORRECT_CONC); game.stats.correct++; SFX.chordUp(); }
+  else { t.state = 'wrong'; addProgress(CONFIG.WRONG_PROGRESS); addConc(CONFIG.WRONG_CONC); game.stats.failed++; SFX.chordDown(); }
   markDirty();
 }
 function bluff() {
@@ -5843,7 +5875,7 @@ function update(dt) {
 // сон на пределе: глаза сами закрываются (микросон)
 function updateMicrosleep(dt) {
   const u = game.urges.sleep;
-  if (u.crit && !game.action) {
+  if (u.value >= CONFIG.MICROSLEEP_FROM && !game.action) {
     game.microT += dt;
     if (game.microT >= CONFIG.MICROSLEEP_EVERY) { game.microT = 0; game.microsleep = CONFIG.MICROSLEEP_LEN; }
   } else game.microT = 0;
@@ -5971,12 +6003,10 @@ function drawStudy(c, w, now) {
   c.fillStyle = UI.text2; c.font = F(13, 700); c.textBaseline = 'middle'; c.fillText('ВЫУЧЕНО', cx, y + 54);
   c.fillStyle = '#ececf1'; rr(c, cx + 84, y + 46, cw - 160, 16, 8); c.fill();
   const pg = c.createLinearGradient(cx + 84, 0, cx + cw - 76, 0); pg.addColorStop(0, '#30d158'); pg.addColorStop(1, '#34c759');
-  c.fillStyle = game.forgetting ? (Math.sin(now * 8) > 0 ? '#ff6b5f' : '#ff9f95') : pg; rr(c, cx + 84, y + 46, Math.max(16, (cw - 160) * game.progress / 100), 16, 8); c.fill();
+  c.fillStyle = pg; rr(c, cx + 84, y + 46, Math.max(16, (cw - 160) * game.progress / 100), 16, 8); c.fill();
   c.fillStyle = UI.text; c.font = F(22, 800); c.textAlign = 'right'; c.fillText(Math.floor(game.progress) + '%', cx + cw, y + 55); c.textAlign = 'left';
-  const fm = focusMult(), nc = critCount();
-  c.font = F(13, 700); c.textAlign = 'right';
-  if (nc > 0) { c.fillStyle = UI.red; c.fillText('за ответ +' + fmtPct(CONFIG.CORRECT_PROGRESS * fm) + '% вместо +' + CONFIG.CORRECT_PROGRESS + '% — мешают полные шкалы: ' + nc, cx + cw, y + 94); }
-  else { c.fillStyle = UI.text2; c.fillText('за верный ответ +' + CONFIG.CORRECT_PROGRESS + '%', cx + cw, y + 94); }
+  c.font = F(13, 700); c.textAlign = 'right'; c.fillStyle = UI.text2;
+  c.fillText('за верный ответ +' + fmtPct(CONFIG.CORRECT_PROGRESS) + '%', cx + cw, y + 94);
   c.textAlign = 'left';
 
   if (!t) {
@@ -6023,7 +6053,7 @@ function drawStudy(c, w, now) {
       c.fillStyle = UI.orange; c.font = F(13, 800); c.textAlign = 'right';
       c.fillText('аудиокнига мешает информатике: время ×' + CONFIG.AUDIO_CS_MULT + '  [3] — пауза', cx + cw, ty + 22); c.textAlign = 'left';
     }
-    const msgs = { right: ['Верно! +' + fmtPct(t.gain || CONFIG.CORRECT_PROGRESS) + '%', UI.green], wrong: ['Мимо', UI.red], timeout: ['Не успел', UI.red], bluffWin: ['Прокатило! +' + CONFIG.BLUFF_WIN + '%', UI.green], bluffLose: ['Не прокатило… ' + CONFIG.BLUFF_LOSE + '%', UI.red] };
+    const msgs = { right: ['Верно! +' + fmtPct(CONFIG.CORRECT_PROGRESS) + '%', UI.green], wrong: ['Мимо', UI.red], timeout: ['Не успел', UI.red], bluffWin: ['Прокатило! +' + CONFIG.BLUFF_WIN + '%', UI.green], bluffLose: ['Не прокатило… ' + CONFIG.BLUFF_LOSE + '%', UI.red] };
     if (msgs[t.state]) { c.fillStyle = msgs[t.state][1]; c.font = F(16, 800); c.textAlign = 'center'; c.fillText(msgs[t.state][0], x + ww / 2, ty + 22); c.textAlign = 'left'; }
   }
   // «ВЫВЕЗУ НА ПОНИМАНИИ» — самая яркая кнопка на экране
@@ -6044,15 +6074,6 @@ function drawStudy(c, w, now) {
   const status = game.action ? actionStatus() : !active && !studyBlocked() ? 'Окно неактивно — кликни сюда, чтобы вернуться к учёбе' : '';
   c.fillStyle = UI.text2; c.font = F(14, 500); c.textAlign = 'center'; c.fillText(status, x + ww / 2, y + hh - 18); c.textAlign = 'left';
   if (!active && !studyBlocked() && !game.action) { c.fillStyle = 'rgba(245,245,248,0.55)'; c.fillRect(x, y + 30, ww, hh - 64); }
-  if (tooDistracted() && !game.action && !studyBlocked()) {
-    c.fillStyle = 'rgba(255,240,240,0.92)'; c.fillRect(x, y + 104, ww, 340);
-    c.fillStyle = UI.red; c.font = F(26, 900); c.textAlign = 'center';
-    c.fillText('Миша не может сосредоточиться', x + ww / 2, y + 230);
-    c.font = F(17, 600); c.fillStyle = '#7a1c16';
-    c.fillText('полных шкал: ' + critCount() + ' — задачи не идут, выученное выветривается', x + ww / 2, y + 266);
-    c.fillText('Сбрось хотя бы одну шкалу клавишей под ней', x + ww / 2, y + 292);
-    c.textAlign = 'left';
-  }
 }
 function actionStatus() {
   const a = game.action;
@@ -6123,8 +6144,9 @@ function drawPlayer(c, w) {
 
 function drawNotes(c, w, second) {
   const r = w.rect, [x, y, ww, hh] = r, p = POEMS[w.poem];
-  const threat = !second && w.chosen < 0 ? clamp(w.openT / CONFIG.POEM_SECOND_AFTER, 0, 1) * 100 : 0;
-  drawChrome(c, r, second ? 'стихи (2).txt' : 'стихи.txt', { bg: UI.notes, titleBg: UI.notesTitle, titleBg2: '#eadb8e', urge: threat, active: game.focus === w.id });
+  const pu = game.urges.poem, critNow = !second && pu.crit && w.chosen < 0;
+  const threat = critNow ? 100 * pu.critT / CONFIG.CRIT_GRACE : !second && w.chosen < 0 ? clamp(w.openT / CONFIG.POEM_SECOND_AFTER, 0, 1) * 100 : 0;
+  drawChrome(c, r, critNow ? 'стихи.txt — выбери строчку, осталось ' + Math.ceil(pu.graceLeft()) + ' с!' : second ? 'стихи (2).txt' : 'стихи.txt', { bg: UI.notes, titleBg: UI.notesTitle, titleBg2: '#eadb8e', urge: threat, active: game.focus === w.id });
   region(w.id, x, y, ww, hh, w.id + ':bg', null);
   const cx = x + 32, s = second ? 1.15 : 1;
   c.fillStyle = '#7a6400'; c.font = F(14 * s, 800); c.textBaseline = 'middle';
@@ -7198,6 +7220,7 @@ const ANIMS = {
     return f;
   },
   WIN: (t) => { const p = standAt(0, 0.66, { y: POSE_STAND.y + Math.abs(Math.sin(t * 5)) * 0.06, headX: 0.3 }); const f = frame(p, 0); f.L = { p: bodyPt(p, 0, -0.3, p.y + 1.0, -0.05), pole: V3(-1, 0, 0), curl: 0.9 }; f.R = { p: bodyPt(p, 0, 0.3, p.y + 1.0 + Math.sin(t * 6) * 0.05, -0.05), pole: V3(1, 0, 0), curl: 0.9 }; return f; },
+  LOSE_PHONE: (t) => { const p = Object.assign(poseClone(POSE_SIT), { torso: 0.12, headX: -0.45, z: 0.62, headY: Math.sin(t * 0.4) * 0.1 }); const f = frame(p); f.R = { phone: true, pole: V3(0.9, -1, 0.3), curl: 0.75 }; f.L = { p: V3(-0.15, 0.62, 0.38), pole: V3(-1, -0.5, 0.2), curl: 0.4 }; return f; }, // залип в телефоне
   FAIL: (t) => { const p = Object.assign(poseClone(POSE_SIT), { torso: -0.95, headX: -0.3, headY: 0.4 }); const f = frame(p); f.L = { p: V3(-0.12, KB.y + 0.03, 0.12), pole: V3(-1, -0.3, 0.3), curl: 0.6 }; f.R = { p: V3(0.14, KB.y + 0.03, 0.1), pole: V3(1, -0.3, 0.3), curl: 0.6 }; f.breath = 0.02; return f; },
   IDLE_STAND: (t) => { const p = standAt(0.55, 1.15, { headX: -0.25 + Math.sin(t * 0.7) * 0.05, torso: 0.04 }); const ry = faceTo(-0.55, -1.3); const f = frame(p, ry); hangHands(f, p, ry); return f; }, // на заставке: стоит и смотрит на ноутбук
 };
@@ -7286,7 +7309,7 @@ function updateMisha(dt, now) {
   if (S.chair) S.chair.position.z = S.chairBaseZ + P.chair;
   if (f.lid != null) S.lid.rotation.x = f.lid;
   // предметы, за которыми идут руки
-  const holdPhone = M.state === 'PHONE' && game.action && game.action.kind === 'phone';
+  const holdPhone = (M.state === 'PHONE' && game.action && game.action.kind === 'phone') || M.state === 'LOSE_PHONE';
   updatePhoneObject(dt, holdPhone);
   if (f.sash != null) S.sashTarget = f.sash; else S.sashTarget = null;
   updateSash(dt);
@@ -7333,7 +7356,7 @@ const _pq = new THREE.Quaternion();
 function updatePhoneObject(dt, hold) {
   const ph = S.phone;
   if (hold) {
-    const a = game.action, k = smooth((a.t - 0.15) / 0.45);
+    const a = game.action, k = a ? smooth((a.t - 0.15) / 0.45) : 1;
     S.phoneHold.copy(CAMS.PHONE_HOLD);
     _v3.copy(S.phoneHome.pos).lerp(S.phoneHold, k);
     _pq.copy(S.phoneHome.quat).slerp(S.phoneHoldQuat, k);
@@ -7632,6 +7655,7 @@ function buildHud() {
     document.getElementById(cfg.kind === 'window' ? 'hudL' : 'hudR').appendChild(el);
     HUD.meters[cfg.id] = { el, fill: el.querySelector('.fl'), tag: el.querySelector('.tag') };
   }
+  HUD.crit = document.getElementById('critWarn'); HUD.vig = document.getElementById('critVig'); HUD.lose = document.getElementById('loseFlash');
   HUD.toast = document.getElementById('toast'); HUD.busy = document.getElementById('busyMsg'); HUD.push = document.getElementById('pushHud');
 }
 function hudPress(id) {
@@ -7648,7 +7672,7 @@ function updateHud() {
     const v = Math.round(u.value * 2) / 2;
     const busy = game.action && game.action.urge === id;
     let tag = '';
-    if (u.crit) tag = 'ЖМИ!';
+    if (u.crit) tag = u.serviced() ? '•••' : u.paused ? '⏸' : Math.ceil(u.graceLeft()) + ' с';
     else if (busy) tag = '•••';
     else if (id === 'audio' && game.audioPlaying) tag = '▶';
     else if (id === 'air' && game.windowOpen) tag = 'откр.';
@@ -7661,13 +7685,19 @@ function updateHud() {
     m.el.classList.toggle('busy', !!busy);
     setText(m.tag, tag);
   }
+  // полные шкалы: отсчёт до поражения
+  const crits = show ? Object.values(game.urges).filter(u => u.crit && !u.serviced()) : [];
+  const html = crits.map(u => `<div class="cw" style="--c:${u.color}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[u.id]}"/></svg></span><b>${u.label.toUpperCase()}</b>` +
+    (u.paused ? `<span class="tm">⏸ ждёт</span>` : `<span class="tm">${Math.ceil(u.graceLeft())}</span>`) + `жми <kbd>${keyName(u.hotkey)}</kbd>${u.id === 'poem' ? ' или выбери строчку' : ''}</div>`).join('');
+  if (html !== HUD.critHtml) { HUD.critHtml = html; HUD.crit.innerHTML = html; }
+  HUD.vig.classList.toggle('on', crits.some(u => !u.paused));
   // что делает Миша
   const a = game.action;
   const titles = { sleep: ['Миша спит на кровати', 'Zzz…'], water: ['Миша пьёт воду', ''], chair: ['Миша разминается', ''], air: [game.windowOpen ? 'Проветриваем' : 'Миша возится с окном', ''], reels: ['Телефон: выбери рилс и отправь', 'Tab — положить'], temki: ['Safari: кликни по подсвеченной темке', '2 — закрыть'] };
   if (show && a && titles[a.urge] && a.kind !== 'pushups') {
     HUD.toast.style.display = 'block';
     const [t, sub] = titles[a.urge];
-    setText(HUD.toast.querySelector('.t'), t + (a.overflow ? ' (долго — шкала была полной)' : ''));
+    setText(HUD.toast.querySelector('.t'), t + (a.overflow ? ' — спасаем в последний момент' : ''));
     setText(HUD.toast.querySelector('.sub'), a.dur ? (sub ? sub + ' · ' : '') + 'ещё ' + Math.ceil(Math.max(0, a.dur - a.t)) + ' с' : sub);
     HUD.toast.querySelector('.pb').style.display = a.dur ? 'block' : 'none';
     if (a.dur) HUD.toast.querySelector('.pb i').style.width = (100 * clamp(a.t / a.dur, 0, 1)).toFixed(1) + '%';
@@ -7679,9 +7709,9 @@ function updateHud() {
     setText(HUD.push.querySelector('.n'), p.reps + ' / ' + p.need);
     let s;
     if (a.t < p.down) s = 'ложимся… жми ПРОБЕЛ';
-    else if (p.failed) s = 'не смог… стоит и думает о жизни · ' + Math.ceil(Math.max(0, game.urges.pushups.overflowCost - a.t)) + ' с';
+    else if (p.failed) s = 'не смог…';
     else if (p.done) s = p.reps >= p.need ? 'есть! вопросы?' : 'устал, хватит';
-    else s = p.overflow ? 'ПРОБЕЛ! осталось ' + Math.max(0, p.limit - p.t).toFixed(1) + ' с' : 'жми ПРОБЕЛ (6 — бросить)';
+    else s = p.overflow ? 'ПРОБЕЛ! не успеешь — проигрыш · ' + Math.max(0, p.limit - p.t).toFixed(1) + ' с' : 'жми ПРОБЕЛ (6 — бросить)';
     setText(HUD.push.querySelector('.s'), s);
     HUD.push.querySelector('.pb').style.display = p.overflow && !p.done && !p.failed ? 'block' : 'none';
     HUD.push.querySelector('.pb i').style.width = (100 * clamp(1 - p.t / p.limit, 0, 1)).toFixed(1) + '%';
@@ -7730,7 +7760,7 @@ function startIntro() {
 function introTutorial() {
   if (game.tutorialShown) return;
   game.tutorialShown = true;
-  const tips = [['Подсказка', 'шкалы по бокам растут сами — сбрасывай их клавишей под шкалой'], ['Подсказка', 'полная шкала штрафует, пока сам не нажмёшь её клавишу'], ['Подсказка', 'Tab — телефон, Esc — пауза, задачи — кликом мыши']];
+  const tips = [['Подсказка', 'шкалы по бокам растут сами — сбрасывай их клавишей под шкалой'], ['Подсказка', 'шкала дошла до 100% — 6 секунд на спасение, иначе Миша проиграл'], ['Подсказка', 'Tab — телефон, Esc — пауза, задачи — кликом мыши']];
   tips.forEach(([a, b]) => notify(a, b, '#8e8e93', 'info', null, null));
   game.notifs.forEach((n, i) => n.age = -i * 0.6);
 }
@@ -7784,10 +7814,42 @@ function endGame() {
   SFX.setHum(0);
   setTimeout(showEndCard, 1500);
 }
+// шкала заполнилась и Мишу не спасли — проигрыш
+function loseGame(id) {
+  if (game.phase === 'end') return;
+  game.stats.longest = Math.max(game.stats.longest, game.streak);
+  game.phase = 'end';
+  const p = Math.floor(game.progress);
+  game.result = { progress: p, grade: 'U', win: false, lost: id, time: game.elapsed };
+  if (game.sim) return;
+  if (game.action && game.action.cancel) game.action.cancel(game.action);
+  game.action = null; game.pushup = null;
+  for (const w of ['notes1', 'notes2', 'safari']) game.wins[w].open = false;
+  game.screenOff = true; markDirty();
+  SFX.setHum(0); SFX.lose();
+  // вспышка «МИША ПРОИГРАЛ» с иконкой привычки
+  const u = game.urges[id === 'pushupsFail' ? 'pushups' : id], end = LOSE_ENDINGS[id];
+  HUD.lose.style.setProperty('--c', u.color);
+  HUD.lose.innerHTML = `<div class="lf-ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[u.id]}"/></svg></div><div class="lf-t">МИША ПРОИГРАЛ</div><div class="lf-s">${end.title}</div>`;
+  HUD.lose.classList.remove('show'); void HUD.lose.offsetWidth; HUD.lose.classList.add('show');
+  setCam('END', 1.6);
+  if (id === 'pushupsFail') { /* остаётся лежать на полу */ }
+  else playAnim(id === 'reels' || id === 'temki' ? 'LOSE_PHONE' : 'FAIL');
+  setTimeout(showEndCard, 2200);
+}
 function showEndCard() {
   const r = game.result, s = game.stats;
   const colors = { 'A*': '#34c759', B: '#30b0c7', C: '#2f7bff', E: '#ff9500', U: '#ff3b30' };
   const titles = { 'A*': 'МИША ВЫВЕЗ', B: 'Почти вывез', C: 'Нормально, но могло быть лучше', E: 'Еле-еле', U: 'Миша не смог учиться' };
+  let head;
+  if (r.lost) {
+    const u = game.urges[r.lost === 'pushupsFail' ? 'pushups' : r.lost], end = LOSE_ENDINGS[r.lost];
+    head = `<div class="grade"><div class="g" style="background:${u.color}"><svg viewBox="0 0 24 24" width="56" height="56" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[u.id]}"/></svg></div>
+        <div><h2>${end.title}</h2><p>${end.text}</p><p><b>Проигрыш</b> · шкала «${u.label}» заполнилась · продержался ${fmtClock(r.time)} · выучено ${r.progress}%</p></div></div>`;
+  } else {
+    head = `<div class="grade"><div class="g" style="background:${colors[r.grade]}">${r.grade}</div>
+        <div><h2>${titles[r.grade]}</h2><p>Выучено ${r.progress}% · ${r.win ? 'за ' + fmtClock(game.elapsed) : 'время вышло, но Миша продержался'}</p></div></div>`;
+  }
   const rows = [
     ['Раз отвлёкся всего', s.distractions], ['Рилсов отправлено', s.reels], ['Темок найдено', s.temki], ['Стихов сочинено', s.poems],
     ['Отжиманий сделано', s.pushups], ['Минут проспано', (s.sleepSec / 60).toFixed(1)], ['Стаканов выпито', s.glasses], ['Раз открывал окно', s.windowOpens],
@@ -7797,8 +7859,7 @@ function showEndCard() {
   document.getElementById('endCard').innerHTML = `
     <div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><b>Итоги вечера</b></div>
     <div class="body">
-      <div class="grade"><div class="g" style="background:${colors[r.grade]}">${r.grade}</div>
-        <div><h2>${titles[r.grade]}</h2><p>Выучено ${r.progress}% · ${r.win ? 'за ' + fmtClock(game.elapsed) : 'время вышло'}</p></div></div>
+      ${head}
       <table class="stats">${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>
       <button class="again" id="againBtn">ЕЩЁ РАЗ</button>
     </div>`;
@@ -7807,6 +7868,7 @@ function showEndCard() {
 }
 function restart() {
   document.getElementById('endOv').classList.remove('show');
+  HUD.lose.classList.remove('show');
   game = newGame();
   HUD.cache = {};
   startIntro();
@@ -7835,6 +7897,7 @@ function debugKey(ev) {
   if (ev.code === 'KeyC') { game.concentration = 10; markDirty(); return true; }
   if (ev.code === 'KeyF') { game.concentration = 100; markDirty(); return true; }
   if (ev.code === 'KeyK') { endGame(); return true; }
+  if (ev.code === 'KeyL') { loseGame(pick(Object.keys(LOSE_ENDINGS), Math.random)); return true; }
   if (ev.code === 'KeyB') { const r = runBalance(10); console.table(r); game.debugSim = r; return true; }
   return false;
 }
@@ -7849,24 +7912,26 @@ function updateDebug(dt) {
     `progress ${game.progress.toFixed(1)}  conc ${game.concentration.toFixed(1)}\naction ${game.action ? game.action.kind + ':' + game.action.urge + (game.action.overflow ? '!' : '') + ' ' + game.action.t.toFixed(1) : '-'}  anim ${S.misha.state}\n` +
     `cam ${game.cam.from}→${game.cam.to} ${game.cam.t.toFixed(2)}  focus ${game.focus}  window ${game.windowOpen ? 'открыто' : 'закрыто'}  audio ${game.audioPlaying ? 'play' : 'pause'}\n\n`;
   for (const id in u) { const x = u[id]; const bar = '#'.repeat(Math.round(x.value / 5)).padEnd(20, '.'); s += `${keyName(x.hotkey).padEnd(6)} ${id.padEnd(8)} ${bar} ${x.value.toFixed(0).padStart(3)}${x.crit ? ' CRIT' : ''}\n`; }
-  s += `\nShift+1..8 / Shift+Пробел — шкала сразу на 100%\nT +30с  G +10%  C конц=10  F конц=100  K финал\nB — симуляция баланса (10 прогонов на стратегию)`;
-  if (game.debugSim) s += '\n\n' + game.debugSim.map(r => `${r.strategy}: progress ${r.avg} (${r.min}–${r.max}), окон в середине ${r.midWindows}, в конце ${r.endWindows}`).join('\n');
+  s += `\nShift+1..8 / Shift+Пробел — шкала сразу на 100%\nT +30с  G +10%  C конц=10  F конц=100  K финал\nL — проиграть (случайная концовка)\nB — симуляция баланса (10 прогонов на стратегию)`;
+  if (game.debugSim) s += '\n\n' + game.debugSim.map(r => `${r.strategy}: progress ${r.avg} (${r.min}–${r.max}), дожили ${r.survived}, проигрыш в среднем на ${r.lossAt}`).join('\n');
   document.getElementById('debug').textContent = s;
 }
 
 // --- боты для симуляции: играют теми же функциями, что и игрок
 const STRATEGIES = {
-  perfect: { react: 4.5, acc: 0.92, preReset: 1.0, at: 72, critDelay: 0.5, pushRate: 4.5, audioSmart: true, bluff: 0, focusDelay: 0.8 },
-  average: { react: 5.5, acc: 0.82, preReset: 0.5, at: 82, critDelay: 6, pushRate: 3.0, audioSmart: false, bluff: 0.5, focusDelay: 1.2 },
-  bad:     { react: 5.5, acc: 0.82, preReset: 0.0, at: 999, critDelay: Infinity, pushRate: 0, audioSmart: false, bluff: 0, focusDelay: 1.2, blockDelay: 12 },
+  // critDelay — через сколько секунд бот замечает полную шкалу (каждый раз заново)
+  perfect: { react: 4.5, acc: 0.92, preReset: 1.0, at: 72, critDelay: () => 0.4, pushRate: 4.5, audioSmart: true, bluff: 0, focusDelay: 0.8 },
+  average: { react: 5.5, acc: 0.82, preReset: 0.7, at: 85, critDelay: (r) => r() < 0.85 ? 1 + r() * 3 : 4 + r() * 8, pushRate: 3.0, audioSmart: false, bluff: 0.5, focusDelay: 1.2 },
+  bad:     { react: 5.5, acc: 0.82, preReset: 0.0, at: 999, critDelay: () => Infinity, pushRate: 0, audioSmart: false, bluff: 0, focusDelay: 1.2 },
 };
-function makeBot(kind) { return { kind, s: STRATEGIES[kind], plan: null, critT: {}, decide: {}, pushT: 0, focusT: 0, phT: 0, sfT: 0 }; }
+function makeBot(kind) { return { kind, s: STRATEGIES[kind], plan: null, critT: {}, critWait: {}, decide: {}, pushT: 0, focusT: 0, phT: 0, sfT: 0 }; }
+function botCritDelay(bot, id) { if (bot.critWait[id] == null) bot.critWait[id] = bot.s.critDelay(game.rnd); return bot.critWait[id]; }
 function botStep(bot, dt) {
   const s = bot.s, g = game, rnd = g.rnd;
   if (g.focus !== 'study' && !studyBlocked() && !g.action) { bot.focusT += dt; if (bot.focusT > s.focusDelay) { g.focus = 'study'; bot.focusT = 0; } } else bot.focusT = 0;
   for (const id of ['notes2', 'notes1']) {
     const w = g.wins[id];
-    if (w.open && w.chosen < 0) { const delay = s.blockDelay != null ? s.blockDelay : (w.overflow ? Math.min(s.critDelay, 4) : 1.2); if (w.openT > delay) notesChoose(id, Math.floor(rnd() * 3)); }
+    if (w.open && w.chosen < 0) { const delay = id === 'notes1' && g.urges.poem.crit ? botCritDelay(bot, 'poem') : s.preReset > 0 ? 1.2 : 12; if (w.openT > delay) notesChoose(id, Math.floor(rnd() * 3)); }
   }
   const a = g.action;
   if (a) {
@@ -7879,19 +7944,20 @@ function botStep(bot, dt) {
     const cs = g.task && g.task.q.subject === 'cs' && g.task.state === 'ask';
     if (cs && g.audioPlaying) toggleAudio();
     else if (!cs && !g.audioPlaying && !g.task) toggleAudio();
-  } else if (!g.audioPlaying && g.urges.audio.value > 60) toggleAudio();
+  } else if (!g.audioPlaying && (g.urges.audio.value > 60 || g.urges.audio.crit)) toggleAudio();
   if (g.action) return;
-  if (g.cam.t >= 1) {
+  {
     for (const id in g.urges) {
       const u = g.urges[id];
       if (id === 'audio') continue;
       if (id === 'poem' && (g.wins.notes1.open || g.wins.notes2.open)) continue;
       if (u.crit) {
         bot.critT[id] = (bot.critT[id] || 0) + dt;
-        if (bot.critT[id] > s.critDelay) { bot.critT[id] = 0; urgeKey(id); if (g.action) break; }
+        if (bot.critT[id] > botCritDelay(bot, id)) { urgeKey(id); if (g.action) break; }
         continue;
       }
-      bot.critT[id] = 0;
+      bot.critT[id] = 0; bot.critWait[id] = null;
+      if (g.cam.t < 1) continue;
       if (u.value >= s.at) {
         if (id === 'air' && g.windowOpen) continue;
         if (bot.decide[id] === undefined) bot.decide[id] = rnd() < s.preReset;
@@ -7928,13 +7994,13 @@ function runSim(kind, seed) {
   game = newGame({ sim: true, noCap: true, seed });
   game.tutorialShown = true; game.cam = { from: 'DESK', to: 'DESK', t: 1, dur: CONFIG.CAM_TRANSITION };
   const bot = makeBot(kind), dt = 1 / 20;
-  let mid = null, end = null, midVis = 1, endVis = 1;
+  let mid = null, end = null;
   while (game.phase === 'play') {
     botStep(bot, dt); update(dt);
-    if (mid == null && game.elapsed >= 180) { mid = windowsBottomUp().length; midVis = visibleStudyFraction(); }
-    if (end == null && game.elapsed >= 330) { end = windowsBottomUp().length; endVis = visibleStudyFraction(); }
+    if (mid == null && game.elapsed >= 180) mid = windowsBottomUp().length;
+    if (end == null && game.elapsed >= 330) end = windowsBottomUp().length;
   }
-  const out = { progress: game.progress, mid, end, midVis, endVis, stats: Object.assign({}, game.stats) };
+  const out = { progress: game.progress, lost: game.result && game.result.lost, time: game.elapsed, mid, end, stats: Object.assign({}, game.stats) };
   game = saved;
   if (savedAnim) Object.assign(M, savedAnim);
   return out;
@@ -7944,9 +8010,12 @@ function runBalance(n = 20) {
     const rs = []; for (let i = 0; i < n; i++) rs.push(runSim(kind, 1000 + i * 7919));
     const ps = rs.map(r => r.progress);
     const avg = x => x.reduce((a, b) => a + b, 0) / x.length;
+    const avgN = x => { const y = x.filter(v => v != null); return y.length ? avg(y) : NaN; };
+    const lost = rs.filter(r => r.lost), causes = {};
+    lost.forEach(r => causes[r.lost] = (causes[r.lost] || 0) + 1);
     return { strategy: kind, avg: avg(ps).toFixed(1), min: Math.min(...ps).toFixed(0), max: Math.max(...ps).toFixed(0),
-      midWindows: avg(rs.map(r => r.mid)).toFixed(1), endWindows: avg(rs.map(r => r.end)).toFixed(1),
-      midStudyVisible: (avg(rs.map(r => r.midVis)) * 100).toFixed(0) + '%', endStudyVisible: (avg(rs.map(r => r.endVis)) * 100).toFixed(0) + '%',
+      survived: Math.round(100 * (1 - lost.length / n)) + '%', lossAt: lost.length ? fmtClock(avg(lost.map(r => r.time))) : '—', causes: JSON.stringify(causes),
+      midWindows: avgN(rs.map(r => r.mid)).toFixed(1), endWindows: avgN(rs.map(r => r.end)).toFixed(1),
       correct: avg(rs.map(r => r.stats.correct)).toFixed(1), failed: avg(rs.map(r => r.stats.failed)).toFixed(1), distractions: avg(rs.map(r => r.stats.distractions)).toFixed(1) };
   });
 }
