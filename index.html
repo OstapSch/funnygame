@@ -6491,6 +6491,7 @@ function updateMisha(dt, now) {
   // в первом лице голову не видно (камера внутри неё)
   const fp = game.cam.mode === 'FIRST' || game.cam.mode === 'PHONE';
   M.head.visible = !(fp && game.cam.t > 0.6);
+  M.arms.forEach(a => a.sh.visible = M.head.visible); // руки в первом лице закрывают экран и телефон
 }
 const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3();
 
@@ -6512,8 +6513,9 @@ function computeCamPresets() {
   const right = new THREE.Vector3().crossVectors(dir, new THREE.Vector3(0, 1, 0)).normalize();
   const up = new THREE.Vector3().crossVectors(right, dir).normalize();
   S.phoneHold = f.pos.clone().addScaledVector(dir, 0.29).addScaledVector(right, 0.13).addScaledVector(up, -0.07);
+  // Matrix4.lookAt(eye, target) направляет +Z от target к eye — экран (+Z) смотрит на камеру
   const m = new THREE.Matrix4().lookAt(f.pos.clone().addScaledVector(right, 0.04), S.phoneHold, up);
-  S.phoneHoldQuat = new THREE.Quaternion().setFromRotationMatrix(m).multiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI));
+  S.phoneHoldQuat = new THREE.Quaternion().setFromRotationMatrix(m);
   CAMS.PHONE = { pos: f.pos.clone().add(new THREE.Vector3(0.03, -0.01, 0)), look: f.look.clone().lerp(S.phoneHold, 0.6) };
 }
 function camPreset(mode) {
