@@ -5,7 +5,12 @@
     pip install flask
     python app.py
 Браузер с игрой откроется сам: http://127.0.0.1:5000
+
+С телефона: подключи его к тому же Wi-Fi, что и компьютер, и открой адрес
+«С телефона», который сервер напишет при запуске. Если не открывается —
+разреши Python входящие подключения в брандмауэре.
 """
+import socket
 import threading
 import webbrowser
 from pathlib import Path
@@ -38,8 +43,23 @@ def models(name):
     return send_from_directory(ROOT / "models", name)
 
 
+def lan_ip():
+    # адрес компьютера в локальной сети (пакеты никуда не отправляются)
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("10.255.255.255", 1))
+            return s.getsockname()[0]
+    except OSError:
+        return None
+
+
 if __name__ == "__main__":
     url = "http://127.0.0.1:5000"
-    print(f"Игра: {url}  (остановить — Ctrl+C)")
+    ip = lan_ip()
+    print(f"Игра на этом компьютере: {url}")
+    if ip:
+        print(f"С телефона (тот же Wi-Fi): http://{ip}:5000")
+    print("Остановить — Ctrl+C")
     threading.Timer(1.0, lambda: webbrowser.open(url)).start()
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    # 0.0.0.0 — чтобы телефон в той же сети мог открыть игру
+    app.run(host="0.0.0.0", port=5000, debug=False)

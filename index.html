@@ -2,14 +2,19 @@
 <html lang="ru">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1d2230">
 <title>МИША НЕ МОЖЕТ УЧИТЬСЯ</title>
 <link rel="icon" href="data:,">
 <style>
   :root {
     --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #1d2230; font-family: var(--font); }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #1d2230; color: #fff; font-family: var(--font);
+    /* телефон: без прокрутки, зума, выделения и подсветки тапов */
+    overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
   #view { position: fixed; inset: 0; display: block; width: 100%; height: 100%; }
   #view.pointer { cursor: pointer; }
 
@@ -22,10 +27,12 @@
   /* ШКАЛЫ ОТВЛЕЧЕНИЙ — по бокам */
   .hudCol { position: fixed; top: 13vh; display: flex; gap: 6px; z-index: 6; pointer-events: none; opacity: 0; transition: opacity .6s; }
   .hudCol.show { opacity: 1; }
-  #hudL { left: 10px; }
-  #hudR { right: 10px; }
+  .hudCol.show .meter { pointer-events: auto; }
+  #hudL { left: calc(10px + env(safe-area-inset-left, 0px)); }
+  #hudR { right: calc(10px + env(safe-area-inset-right, 0px)); }
   .hudTitle { position: absolute; top: -20px; left: 0; right: 0; text-align: center; font: 700 11px var(--font); letter-spacing: 1.5px; color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.6); }
-  .meter { width: 34px; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .meter { width: 34px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; }
+  .meter:hover .ic { transform: scale(1.12); }
   .meter .ic { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,.35); transition: transform .15s; }
   .meter .ic svg { width: 18px; height: 18px; }
   .meter .tr { position: relative; width: 16px; height: 26vh; border-radius: 9px; background: rgba(20,22,30,.55); box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.35), 0 2px 8px rgba(0,0,0,.3); overflow: hidden; }
@@ -59,6 +66,7 @@
   /* полная шкала: отсчёт до поражения */
   #critWarn { position: fixed; left: 50%; top: 13vh; transform: translateX(-50%); z-index: 8; pointer-events: none; display: flex; flex-direction: column; gap: 8px; align-items: center; }
   #critWarn .cw { display: flex; align-items: center; gap: 10px; padding: 8px 16px 8px 8px; border-radius: 14px; background: rgba(20,22,30,.85); color: #fff; font: 700 17px var(--font); box-shadow: 0 0 0 3px var(--c), 0 8px 26px rgba(0,0,0,.45); animation: cwPulse .5s infinite alternate; }
+  #critWarn .cw { pointer-events: auto; cursor: pointer; }
   #critWarn .ic { width: 34px; height: 34px; border-radius: 50%; background: var(--c); display: flex; align-items: center; justify-content: center; }
   #critWarn .ic svg { width: 20px; height: 20px; }
   #critWarn .tm { font: 900 30px var(--font); color: #ff453a; min-width: 30px; text-align: center; }
@@ -76,6 +84,17 @@
   #loseFlash .lf-s { font: 700 26px var(--font); opacity: .95; margin-top: 6px; }
   @keyframes loseIn { 0% { opacity: 0; transform: scale(1.4); } 12% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; } }
 
+  /* телефон: пауза и «поверни телефон» */
+  .touchOnly { display: none; }
+  body.touch .touchOnly { display: revert; }
+  body.touch .keyOnly { display: none; }
+  #pauseBtn { position: fixed; left: calc(10px + env(safe-area-inset-left, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px)); z-index: 7; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(20,22,30,.7); color: #fff; font: 800 16px var(--font); display: none; align-items: center; justify-content: center; box-shadow: 0 2px 10px rgba(0,0,0,.4); }
+  body.touch.playing #pauseBtn { display: flex; }
+  #rotateOv { position: fixed; inset: 0; z-index: 30; display: none; flex-direction: column; gap: 18px; align-items: center; justify-content: center; text-align: center; background: #1d2230; color: #fff; font: 700 20px var(--font); padding: 24px; }
+  #rotateOv svg { width: 84px; height: 84px; animation: rot 1.6s ease-in-out infinite; }
+  @keyframes rot { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  @media (orientation: portrait) and (pointer: coarse) { #rotateOv { display: flex; } }
+
   .overlay { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 10; }
   .overlay.show { display: flex; }
   #startOv { background: radial-gradient(ellipse at center, rgba(20,24,36,.25), rgba(10,12,20,.75)); cursor: pointer; }
@@ -88,7 +107,7 @@
   #pauseOv { background: rgba(10,12,20,.55); color: #fff; font-size: 40px; font-weight: 800; letter-spacing: 3px; }
   #pauseOv small { display: block; font-size: 16px; font-weight: 400; letter-spacing: 0; opacity: .8; margin-top: 10px; text-align: center; }
   #endOv { background: rgba(10,12,20,.35); justify-content: flex-end; padding-right: 6vw; }
-  .card { width: 520px; max-height: 92vh; overflow: auto; background: #f6f6f8; border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.5); font-family: var(--font); color: #1c1c1e; }
+  .card { width: min(520px, 92vw); max-height: 92vh; max-height: 92dvh; -webkit-user-select: text; user-select: text; touch-action: pan-y; overscroll-behavior: contain; overflow: auto; background: #f6f6f8; border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.5); font-family: var(--font); color: #1c1c1e; }
   .card .bar { height: 30px; background: linear-gradient(#ececee, #dcdce0); border-radius: 14px 14px 0 0; display: flex; align-items: center; padding-left: 12px; gap: 7px; }
   .card .bar i { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
   .card .bar b { flex: 1; text-align: center; margin-right: 60px; font-size: 13px; color: #555; }
@@ -97,12 +116,54 @@
   .grade .g { width: 100px; height: 100px; border-radius: 22px; display: flex; align-items: center; justify-content: center; font-size: 54px; font-weight: 800; color: #fff; flex: none; }
   .grade h2 { margin: 0; font-size: 25px; }
   .grade p { margin: 4px 0 0; color: #666; font-size: 15px; }
-  .stats { width: 100%; border-collapse: collapse; font-size: 14px; }
-  .stats td { padding: 5px 0; border-bottom: 1px solid #e3e3e8; }
-  .stats td:last-child { text-align: right; font-weight: 700; }
+  .stats { display: grid; grid-template-columns: 1fr; column-gap: 18px; font-size: 14px; }
+  .stats .row { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid #e3e3e8; }
+  .stats .row b { font-weight: 700; white-space: nowrap; }
   .again { margin-top: 18px; width: 100%; padding: 14px; border: 0; border-radius: 12px; background: #2f7bff; color: #fff; font-size: 18px; font-weight: 800; cursor: pointer; font-family: var(--font); }
   .again:hover { background: #1f66e6; }
   #debug { position: fixed; left: 8px; top: 8px; z-index: 20; display: none; background: rgba(0,0,0,.8); color: #9f9; font: 12px/1.35 Menlo, Consolas, monospace; padding: 8px 10px; border-radius: 6px; white-space: pre; pointer-events: none; max-height: 96vh; overflow: hidden; }
+
+  @media (max-height: 520px) {
+    .hudCol { top: calc(8px + env(safe-area-inset-top, 0px)); gap: 3px; }
+    .hudTitle { display: none; }
+    .meter { width: 30px; gap: 3px; }
+    .meter .ic { width: 26px; height: 26px; }
+    .meter .ic svg { width: 15px; height: 15px; }
+    .meter .tr { width: 14px; height: 40vh; }
+    .meter .key { min-width: 18px; height: 16px; font-size: 10px; }
+    .meter .lb { font-size: 9px; }
+    .meter .tag { font-size: 8px; min-height: 10px; }
+    #toast { top: calc(6px + env(safe-area-inset-top, 0px)); min-width: 180px; padding: 5px 12px 7px; font-size: 13px; }
+    #toast .sub { font-size: 11px; }
+    #critWarn { top: 16vh; gap: 5px; }
+    #critWarn .cw { font-size: 13px; padding: 4px 10px 4px 4px; gap: 7px; }
+    #critWarn .ic { width: 26px; height: 26px; }
+    #critWarn .tm { font-size: 22px; }
+    #pushHud { top: 14%; }
+    #pushHud .n { font-size: 54px; }
+    #pushHud .s { font-size: 15px; }
+    #loseFlash .lf-ic { width: 76px; height: 76px; }
+    #loseFlash .lf-ic svg { width: 44px; height: 44px; }
+    #loseFlash .lf-t { font-size: 40px; margin-top: 10px; }
+    #loseFlash .lf-s { font-size: 18px; }
+    .titleCard { padding: 0 calc(16px + env(safe-area-inset-right, 0px)) 0 calc(16px + env(safe-area-inset-left, 0px)); }
+    .titleCard h1 { font-size: 34px; }
+    .titleCard p { font-size: 14px; margin: 3px 0; }
+    .titleCard .keys { margin-top: 8px; font-size: 12px; }
+    .titleCard .go { margin-top: 12px; padding: 10px 24px; font-size: 16px; }
+    #pauseOv { font-size: 30px; }
+    #endOv { padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
+    .card .body { padding: 12px 18px 14px; }
+    .grade { gap: 14px; margin-bottom: 8px; }
+    .grade .g { width: 64px; height: 64px; font-size: 34px; border-radius: 16px; }
+    .grade .g svg { width: 36px; height: 36px; }
+    .grade h2 { font-size: 19px; }
+    .grade p { font-size: 12px; }
+    .card { width: min(640px, 92vw); }
+    .stats { font-size: 11px; grid-template-columns: 1fr 1fr; }
+    .stats .row { padding: 3px 0; }
+    .again { margin-top: 10px; padding: 10px; font-size: 16px; }
+  }
 </style>
 </head>
 <body>
@@ -117,6 +178,8 @@
 <div id="critVig"></div>
 <div id="critWarn"></div>
 <div id="loseFlash"></div>
+<button id="pauseBtn" aria-label="Пауза">❚❚</button>
+<div id="rotateOv"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M10.5 18.5h3"/></svg><div>Поверни телефон горизонтально</div></div>
 <div id="pushHud"><div class="n">0 / 10</div><div class="s"></div><div class="pb"><i></i></div></div>
 
 <div class="overlay show" id="startOv">
@@ -125,11 +188,12 @@
     <p>Экзамены AS Level: математика, физика, информатика. На подготовку — шесть минут.</p>
     <p>У Миши девять привычек. Их шкалы — по бокам экрана.</p>
     <p><b>Шкала заполнилась — у тебя 6 секунд. Не успел — Миша проиграл.</b></p>
-    <p class="keys">Сбрасывай привычки сам: 1–8 и Пробел (клавиша подписана под шкалой) · Tab — телефон · Esc — пауза</p>
-    <div class="go">Кликни, чтобы начать</div>
+    <p class="keys touchOnly">Тапай по шкале, чтобы сбросить привычку · тапни по телефону на столе · ❚❚ — пауза</p>
+    <p class="keys keyOnly">Сбрасывай привычки сам: 1–8 и Пробел (клавиша подписана под шкалой) · Tab — телефон · Esc — пауза</p>
+    <div class="go"><span class="keyOnly">Кликни, чтобы начать</span><span class="touchOnly">Тапни, чтобы начать</span></div>
   </div>
 </div>
-<div class="overlay" id="pauseOv"><div>ПАУЗА<small>Esc — продолжить</small></div></div>
+<div class="overlay" id="pauseOv"><div>ПАУЗА<small><span class="keyOnly">Esc — продолжить</span><span class="touchOnly">Тапни, чтобы продолжить</span></small></div></div>
 <div class="overlay" id="endOv"><div class="card" id="endCard"></div></div>
 <pre id="debug"></pre>
 
@@ -5250,6 +5314,9 @@ function shuffle(arr, rnd) { for (let i = arr.length - 1; i > 0; i--) { const j 
 const pick = (arr, rnd) => arr[Math.floor(rnd() * arr.length)];
 function fmtClock(sec) { sec = Math.max(0, Math.floor(sec)); return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0'); }
 const keyName = k => k === ' ' ? 'Пробел' : k;
+// телефон/планшет: клавиатуры нет, всё — тапами (шкалы по бокам — это кнопки)
+const IS_TOUCH = (window.matchMedia && matchMedia('(pointer: coarse)').matches) || ('ontouchstart' in window && navigator.maxTouchPoints > 0);
+const keyHint = u => IS_TOUCH ? null : keyName(u.hotkey); // подпись клавиши в уведомлениях
 
 /* =====================================================================
    4. ЗВУК — только синтез WebAudio
@@ -5267,6 +5334,8 @@ const SFX = {
       osc.connect(f); f.connect(this.humGain); osc.start();
     } catch (e) { console.warn('WebAudio недоступен', e); this.ctx = null; }
   },
+  // iOS держит звук выключенным, пока его не разбудят внутри тапа
+  wake() { this.init(); if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume().catch(() => {}); },
   ok() { return this.ctx && !this.muted && !(game && game.sim); },
   tone(freq, dur, type = 'sine', vol = 0.5, delay = 0, slideTo = 0) {
     if (!this.ok()) return;
@@ -5348,8 +5417,8 @@ function newGame(opts = {}) {
       Шкала дошла до 100% → тревога и отсчёт CRIT_GRACE секунд.
       Не успел нажать — Миша проиграл (как во FNAF: не уследил — всё).
    ===================================================================== */
-function critNotify(u) { notify(u.label + ' — шкала полная!', u.critText + '. ' + CONFIG.CRIT_GRACE + ' с, чтобы спасти Мишу', u.color, u.id, () => urgeKey(u.id), keyName(u.hotkey)); }
-function warnNotify(u, text) { notify(u.label + ' — шкала почти полная', text, u.color, u.id, () => urgeKey(u.id), keyName(u.hotkey)); }
+function critNotify(u) { notify(u.label + ' — шкала полная!', u.critText + '. ' + CONFIG.CRIT_GRACE + ' с, чтобы спасти Мишу', u.color, u.id, () => urgeKey(u.id), keyHint(u)); }
+function warnNotify(u, text) { notify(u.label + ' — шкала почти полная', text, u.color, u.id, () => urgeKey(u.id), keyHint(u)); }
 
 const URGE_HOOKS = {
   reels: {
@@ -5441,7 +5510,7 @@ class Urge {
     const fill = this.fillTime * CONFIG.FILL_SCALE * (this.fillMult ? this.fillMult() : 1);
     this.value = Math.min(100, this.value + 100 * dt * game.difficulty / fill);
     for (const k in this.flavor || {}) if (this.value >= +k && !this.flavored[k]) { this.flavored[k] = true; this.flavor[k](this); }
-    if (this.value >= CONFIG.WARN_NOTIFY && !this.warned) { this.warned = true; warnNotify(this, this.warnText + ' [' + keyName(this.hotkey) + ']'); }
+    if (this.value >= CONFIG.WARN_NOTIFY && !this.warned) { this.warned = true; warnNotify(this, this.warnText + (IS_TOUCH ? ' — тапни шкалу «' + this.label + '»' : ' [' + keyName(this.hotkey) + ']')); }
     if (this.value >= CONFIG.WARN_ALARM && !this.alarmed) { this.alarmed = true; SFX.alarm(); }
     if (this.value >= 100) this.goCrit();
   }
@@ -6107,7 +6176,7 @@ function drawChat(c, w, title, urge, btnLabel, btnKey, onBtn) {
   c.restore();
   const hot = urge.crit;
   button(c, w.id, x + 12, y + hh - 50, ww - 24, 40, btnLabel, btnKey, onBtn, {
-    bg: hot ? UI.red : null, color: hot ? '#fff' : UI.blue, hint: '[' + urge.hotkey + ']', hintColor: hot ? '#fff' : UI.text2, font: F(16, 700),
+    bg: hot ? UI.red : null, color: hot ? '#fff' : UI.blue, hint: IS_TOUCH ? null : '[' + urge.hotkey + ']', hintColor: hot ? '#fff' : UI.text2, font: F(16, 700),
   });
 }
 
@@ -6179,7 +6248,7 @@ function drawSafari(c, w, now) {
   // заголовок ленты
   c.fillStyle = UI.text; c.font = F(20, 800);
   c.fillText(sf.sendT >= 0 ? 'Пересылаю в ТЕМЩИКИ БП…' : sf.hlOn ? 'Вот она! Кликни по темке: ' + Math.ceil(sf.hlT) + ' с' : 'Ищу темку… подсветится через ' + Math.ceil(sf.hlT) + ' с', x + 24, y + 92);
-  const cw = (ww - 24 * 2 - 16) / 2, ch = 205;
+  const cw = (ww - 24 * 2 - 16) / 2, ch = 196;
   sf.posts.forEach((p, i) => {
     const px = x + 24 + (i % 2) * (cw + 16), py = y + 112 + Math.floor(i / 2) * (ch + 14);
     const hl = sf.hlOn && sf.hl === i, sel = sf.sel === i, wrong = sf.wrong === i && sf.flash > 0;
@@ -6187,14 +6256,14 @@ function drawSafari(c, w, now) {
     c.fillStyle = '#fff'; rr(c, px, py, cw, ch, 14); c.fill();
     c.strokeStyle = sel ? UI.green : hl ? `rgba(255,170,0,${0.6 + 0.4 * Math.sin(now * 10)})` : wrong ? `rgba(255,59,48,${sf.flash})` : hov ? UI.blue : '#e3e3e8';
     c.lineWidth = sel || hl || wrong ? 5 : hov ? 2.5 : 1.5; rr(c, px, py, cw, ch, 14); c.stroke();
-    c.save(); rr(c, px + 8, py + 8, cw - 16, 128, 10); c.clip();
-    drawArt(c, p.art, px + 8, py + 8, cw - 16, 128, now); c.restore();
+    c.save(); rr(c, px + 8, py + 8, cw - 16, 120, 10); c.clip();
+    drawArt(c, p.art, px + 8, py + 8, cw - 16, 120, now); c.restore();
     c.fillStyle = UI.text; c.font = F(14, 600);
-    wrap(c, p.text, cw - 24, F(14, 600)).slice(0, 2).forEach((l, k) => c.fillText(l, px + 12, py + 156 + k * 19));
+    wrap(c, p.text, cw - 24, F(14, 600)).slice(0, 2).forEach((l, k) => c.fillText(l, px + 12, py + 148 + k * 19));
     if (hl) { c.fillStyle = '#ffb000'; rr(c, px + cw - 92, py + 14, 80, 26, 13); c.fill(); c.fillStyle = '#fff'; c.font = F(13, 900); c.textAlign = 'center'; c.fillText('ТЕМКА!', px + cw - 52, py + 28); c.textAlign = 'left'; }
     if (sel) { c.fillStyle = 'rgba(52,199,89,0.9)'; rr(c, px + cw - 120, py + 14, 108, 26, 13); c.fill(); c.fillStyle = '#fff'; c.font = F(13, 900); c.textAlign = 'center'; c.fillText('переслано ✓', px + cw - 66, py + 28); c.textAlign = 'left'; }
   });
-  c.fillStyle = UI.text2; c.font = F(13, 600); c.fillText('[2] — закрыть Safari', x + 24, y + hh - 16);
+  button(c, 'safari', x + ww - 184, y + hh - 34, 168, 28, 'Закрыть Safari', 'sfclose', () => cancelAction(), { font: F(14, 700), hint: IS_TOUCH ? null : '[2]', r: 8 });
 }
 
 function drawNotifs(c) {
@@ -6349,7 +6418,7 @@ function renderPhone(now) {
     if (vr.unread > 0) card('ПРОЕКТ ВР-1', vr.unread + ' новых сообщений', '#34a853');
     if (r.value > 50 || r.crit) card('ПРОЕКТ ВР-1', 'ждут рилс от тебя', r.color);
     c.textAlign = 'center'; c.fillStyle = 'rgba(255,255,255,0.85)'; c.font = F(20, 700);
-    c.fillText('Tab — взять телефон', W / 2, H - 60);
+    c.fillText(IS_TOUCH ? 'тапни, чтобы взять' : 'Tab — взять телефон', W / 2, H - 60);
     c.textAlign = 'left';
     return;
   }
@@ -6375,7 +6444,7 @@ function renderPhone(now) {
   c.fillStyle = '#fff'; c.font = F(22, 800); c.textAlign = 'center';
   c.fillText(ph.sendT >= 0 ? 'Отправляю…' : ready ? 'Отправить в чат' : 'Сначала выбери рилс', W / 2, 758);
   if (ph.sendT >= 0) { c.fillStyle = 'rgba(255,255,255,0.75)'; c.fillRect(16, 800, (W - 32) * clamp(game.action.t / game.urges.reels.resetCost, 0, 1), 6); }
-  c.fillStyle = 'rgba(255,255,255,0.75)'; c.font = F(14, 600); c.fillText('Tab — положить телефон', W / 2, H - 22); c.textAlign = 'left';
+  c.fillStyle = 'rgba(255,255,255,0.75)'; c.font = F(14, 600); c.fillText(IS_TOUCH ? 'тапни мимо телефона — положить' : 'Tab — положить телефон', W / 2, H - 22); c.textAlign = 'left';
 }
 function phoneAnimating() { return game.action && game.action.kind === 'phone'; }
 
@@ -6586,7 +6655,8 @@ function at(obj, x, y, z, parent) { obj.position.set(x, y, z); if (parent) paren
 function initThree() {
   const canvas = document.getElementById('view');
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  // на телефоне экран маленький, но плотный: до 2× — чтобы текст на маке читался
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 2 : 1.5));
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -6603,7 +6673,7 @@ function initThree() {
   const sun = new THREE.DirectionalLight(0xffe2c4, 1.25);
   sun.position.set(-3.2, 3.2, 1.0); sun.target.position.set(0, 0.6, 0.6); scene.add(sun.target);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(IS_TOUCH ? 1024 : 2048, IS_TOUCH ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -2.2, right: 2.2, top: 2.2, bottom: -2.2, near: 0.5, far: 9 });
   sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.02;
   scene.add(sun); S.sun = sun;
@@ -7440,6 +7510,10 @@ function applyCamera(now) {
     camera.rotateZ(Math.sin(now * w + 0.7) * 0.3 * Math.PI / 180);
     camera.rotateX(Math.sin(now * w * 0.7) * 0.15 * Math.PI / 180);
   }
+  // маленький экран (телефон): за столом камера чуть приближает ноутбук
+  const zt = (cam.to === 'DESK' || cam.to === 'PHONE') && cam.t > 0.5 ? DESK_ZOOM.value : 1;
+  const z = camera.zoom + (zt - camera.zoom) * 0.12;
+  if (Math.abs(z - camera.zoom) > 0.0005) { camera.zoom = Math.abs(z - zt) < 0.001 ? zt : z; camera.updateProjectionMatrix(); }
   // стул: ёрзанье трясёт картинку
   let shake = 0;
   if (game.phase === 'play' && desk) {
@@ -7453,6 +7527,18 @@ function applyCamera(now) {
   }
 }
 const _q3 = new THREE.Quaternion();
+// Сколько приблизить экран ноутбука, чтобы он занял место между шкалами.
+// На обычном мониторе 1 (без зума). При 16:9 экран мака занимает ~64% ширины и ~67% высоты кадра.
+const DESK_ZOOM = { value: 1 };
+function computeDeskZoom() {
+  const W = window.innerWidth, H = window.innerHeight;
+  if (!IS_TOUCH && H > 520) { DESK_ZOOM.value = 1; return; }
+  const hudW = Math.max(document.getElementById('hudL').offsetWidth, document.getElementById('hudR').offsetWidth) + 14;
+  const widthFrac = 0.64 * (16 / 9) / (W / H);          // доля ширины при zoom = 1
+  const byWidth = (W - 2 * hudW - 8) / W / widthFrac;
+  const byHeight = 0.94 / 0.67;
+  DESK_ZOOM.value = clamp(Math.min(byWidth, byHeight), 1, 1.45);
+}
 
 /* =====================================================================
    17. МОДЕЛИ — необязательный слой: удалось загрузить → заменяем примитив
@@ -7574,15 +7660,15 @@ function phoneClick(x, y) {
 function macClickable() { return game.cam.to === 'DESK' && game.cam.t >= 1 && (!game.action || game.action.kind === 'safari'); }
 
 function onPointerDown(ev) {
-  SFX.init();
+  SFX.wake();
   if (game.phase === 'title') { startIntro(); return; }
   if (game.phase === 'intro') { skipIntro(); return; }
   if (game.phase !== 'play' || game.paused) return;
   if (game.pushup) { pushupRep(); return; } // мини-игра отжиманий: клик = отжимание
   if (game.cam.t < 1) return;
   const hit = screenHit(ev);
-  if (!hit) return;
-  if (game.cam.to === 'PHONE') { if (hit.target === 'phone') phoneClick(hit.x, hit.y); return; }
+  if (!hit && game.cam.to !== 'PHONE') return;
+  if (game.cam.to === 'PHONE') { if (hit && hit.target === 'phone') phoneClick(hit.x, hit.y); else togglePhone(); return; } // тап мимо телефона — положить
   if (!macClickable()) return;
   if ((hit.target === 'phone' || hit.target === 'phoneBody') && !game.action) { togglePhone(); return; }
   if (hit.target === 'mac') {
@@ -7624,7 +7710,7 @@ const HOTKEYS = { Digit1: 'reels', Digit2: 'temki', Digit3: 'audio', Digit4: 'po
   Numpad1: 'reels', Numpad2: 'temki', Numpad3: 'audio', Numpad4: 'poem', Numpad5: 'sleep', Numpad6: 'pushups', Numpad7: 'water', Numpad8: 'air' };
 
 function onKeyDown(ev) {
-  SFX.init();
+  SFX.wake();
   if (ev.code === 'Tab' || ev.code === 'Space') ev.preventDefault();
   if (ev.code === 'Backquote' || ev.key === '~' || ev.key === 'ё' || ev.key === 'Ё') { game.debug = !game.debug; document.getElementById('debug').style.display = game.debug ? 'block' : 'none'; return; }
   if (game.phase === 'title') { if (ev.code === 'Enter' || ev.code === 'Space') startIntro(); return; }
@@ -7654,8 +7740,11 @@ function buildHud() {
     el.title = cfg.label + ' — клавиша ' + keyName(cfg.hotkey);
     document.getElementById(cfg.kind === 'window' ? 'hudL' : 'hudR').appendChild(el);
     HUD.meters[cfg.id] = { el, fill: el.querySelector('.fl'), tag: el.querySelector('.tag') };
+    // тап/клик по шкале = её клавиша (на телефоне это единственный способ)
+    el.addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); SFX.wake(); if (game.phase === 'play' && !game.paused) urgeKey(cfg.id); });
   }
-  HUD.crit = document.getElementById('critWarn'); HUD.vig = document.getElementById('critVig'); HUD.lose = document.getElementById('loseFlash');
+  HUD.crit = document.getElementById('critWarn');
+  HUD.crit.addEventListener('pointerdown', (e) => { const cw = e.target.closest('.cw'); if (!cw) return; e.stopPropagation(); e.preventDefault(); SFX.wake(); if (game.phase === 'play' && !game.paused) urgeKey(cw.dataset.id); }); HUD.vig = document.getElementById('critVig'); HUD.lose = document.getElementById('loseFlash');
   HUD.toast = document.getElementById('toast'); HUD.busy = document.getElementById('busyMsg'); HUD.push = document.getElementById('pushHud');
 }
 function hudPress(id) {
@@ -7667,6 +7756,7 @@ function setText(el, t) { if (el.textContent !== t) el.textContent = t; }
 function updateHud() {
   const show = game.phase === 'play';
   for (const id of ['hudL', 'hudR']) document.getElementById(id).classList.toggle('show', show);
+  document.body.classList.toggle('playing', show);
   for (const id in game.urges) {
     const u = game.urges[id], m = HUD.meters[id];
     const v = Math.round(u.value * 2) / 2;
@@ -7687,13 +7777,13 @@ function updateHud() {
   }
   // полные шкалы: отсчёт до поражения
   const crits = show ? Object.values(game.urges).filter(u => u.crit && !u.serviced()) : [];
-  const html = crits.map(u => `<div class="cw" style="--c:${u.color}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[u.id]}"/></svg></span><b>${u.label.toUpperCase()}</b>` +
-    (u.paused ? `<span class="tm">⏸ ждёт</span>` : `<span class="tm">${Math.ceil(u.graceLeft())}</span>`) + `жми <kbd>${keyName(u.hotkey)}</kbd>${u.id === 'poem' ? ' или выбери строчку' : ''}</div>`).join('');
+  const html = crits.map(u => `<div class="cw" data-id="${u.id}" style="--c:${u.color}"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="${ICONS[u.id]}"/></svg></span><b>${u.label.toUpperCase()}</b>` +
+    (u.paused ? `<span class="tm">⏸ ждёт</span>` : `<span class="tm">${Math.ceil(u.graceLeft())}</span>`) + (IS_TOUCH ? (u.id === 'poem' ? 'выбери строчку' : 'тапни сюда') : `жми <kbd>${keyName(u.hotkey)}</kbd>${u.id === 'poem' ? ' или выбери строчку' : ''}`) + `</div>`).join('');
   if (html !== HUD.critHtml) { HUD.critHtml = html; HUD.crit.innerHTML = html; }
   HUD.vig.classList.toggle('on', crits.some(u => !u.paused));
   // что делает Миша
   const a = game.action;
-  const titles = { sleep: ['Миша спит на кровати', 'Zzz…'], water: ['Миша пьёт воду', ''], chair: ['Миша разминается', ''], air: [game.windowOpen ? 'Проветриваем' : 'Миша возится с окном', ''], reels: ['Телефон: выбери рилс и отправь', 'Tab — положить'], temki: ['Safari: кликни по подсвеченной темке', '2 — закрыть'] };
+  const titles = { sleep: ['Миша спит на кровати', 'Zzz…'], water: ['Миша пьёт воду', ''], chair: ['Миша разминается', ''], air: [game.windowOpen ? 'Проветриваем' : 'Миша возится с окном', ''], reels: ['Телефон: выбери рилс и отправь', IS_TOUCH ? 'тап мимо — положить' : 'Tab — положить'], temki: ['Safari: ' + (IS_TOUCH ? 'тапни' : 'кликни') + ' по подсвеченной темке', IS_TOUCH ? '' : '2 — закрыть'] };
   if (show && a && titles[a.urge] && a.kind !== 'pushups') {
     HUD.toast.style.display = 'block';
     const [t, sub] = titles[a.urge];
@@ -7708,10 +7798,11 @@ function updateHud() {
     HUD.push.style.display = 'block';
     setText(HUD.push.querySelector('.n'), p.reps + ' / ' + p.need);
     let s;
-    if (a.t < p.down) s = 'ложимся… жми ПРОБЕЛ';
+    const press = IS_TOUCH ? 'ТАПАЙ ПО ЭКРАНУ' : 'ПРОБЕЛ';
+    if (a.t < p.down) s = 'ложимся… ' + press;
     else if (p.failed) s = 'не смог…';
     else if (p.done) s = p.reps >= p.need ? 'есть! вопросы?' : 'устал, хватит';
-    else s = p.overflow ? 'ПРОБЕЛ! не успеешь — проигрыш · ' + Math.max(0, p.limit - p.t).toFixed(1) + ' с' : 'жми ПРОБЕЛ (6 — бросить)';
+    else s = p.overflow ? press + '! не успеешь — проигрыш · ' + Math.max(0, p.limit - p.t).toFixed(1) + ' с' : press + (IS_TOUCH ? ' (шкала «Отжим.» — бросить)' : ' (6 — бросить)');
     setText(HUD.push.querySelector('.s'), s);
     HUD.push.querySelector('.pb').style.display = p.overflow && !p.done && !p.failed ? 'block' : 'none';
     HUD.push.querySelector('.pb i').style.width = (100 * clamp(1 - p.t / p.limit, 0, 1)).toFixed(1) + '%';
@@ -7748,7 +7839,8 @@ function updateEyelids(dt, now) {
 }
 
 function startIntro() {
-  SFX.init();
+  SFX.wake();
+  if (IS_TOUCH) wantFullscreen = true; // запросим на отпускании пальца — раньше браузер не разрешит
   document.getElementById('startOv').classList.remove('show');
   game.phase = 'intro'; game.introT = 0;
   resetSceneVisuals();
@@ -7757,10 +7849,26 @@ function startIntro() {
   game.cam = { from: 'HEAD', to: 'HEAD', t: 1, dur: CONFIG.CAM_TRANSITION };
   markDirty();
 }
+// На телефоне звук и полный экран браузер разрешает только на отпускании пальца (touchend/click),
+// а не на касании — поэтому будим их ещё и там.
+let wantFullscreen = false;
+function onGestureEnd() { SFX.wake(); if (wantFullscreen) { wantFullscreen = false; goFullscreen(); } }
+// телефон: на весь экран и горизонтально (Android; на iPhone браузер не даёт — тогда просто игнорируем)
+function goFullscreen() {
+  const el = document.documentElement;
+  try {
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    const p = req && req.call(el, { navigationUI: 'hide' });
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (e) { /* нет блокировки ориентации */ } };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) { /* полный экран недоступен */ }
+}
 function introTutorial() {
   if (game.tutorialShown) return;
   game.tutorialShown = true;
-  const tips = [['Подсказка', 'шкалы по бокам растут сами — сбрасывай их клавишей под шкалой'], ['Подсказка', 'шкала дошла до 100% — 6 секунд на спасение, иначе Миша проиграл'], ['Подсказка', 'Tab — телефон, Esc — пауза, задачи — кликом мыши']];
+  const tips = IS_TOUCH
+    ? [['Подсказка', 'шкалы по бокам растут сами — тапни шкалу, чтобы сбросить'], ['Подсказка', 'шкала дошла до 100% — 6 секунд на спасение, иначе Миша проиграл'], ['Подсказка', 'тапни телефон на столе, чтобы взять; задачи — тапом по экрану']]
+    : [['Подсказка', 'шкалы по бокам растут сами — сбрасывай их клавишей под шкалой'], ['Подсказка', 'шкала дошла до 100% — 6 секунд на спасение, иначе Миша проиграл'], ['Подсказка', 'Tab — телефон, Esc — пауза, задачи — кликом мыши']];
   tips.forEach(([a, b]) => notify(a, b, '#8e8e93', 'info', null, null));
   game.notifs.forEach((n, i) => n.age = -i * 0.6);
 }
@@ -7860,7 +7968,7 @@ function showEndCard() {
     <div class="bar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><b>Итоги вечера</b></div>
     <div class="body">
       ${head}
-      <table class="stats">${rows.map(([a, b]) => `<tr><td>${a}</td><td>${b}</td></tr>`).join('')}</table>
+      <div class="stats">${rows.map(([a, b]) => `<div class="row"><span>${a}</span><b>${b}</b></div>`).join('')}</div>
       <button class="again" id="againBtn">ЕЩЁ РАЗ</button>
     </div>`;
   document.getElementById('endOv').classList.add('show');
@@ -8064,12 +8172,17 @@ function onResize() {
   renderer.setSize(window.innerWidth, window.innerHeight, false);
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  computeDeskZoom();
+  // телефон повернули вертикально посреди игры — пауза, пока не повернут обратно
+  if (IS_TOUCH && window.innerHeight > window.innerWidth && game.phase === 'play' && !game.paused) togglePause();
 }
 
 // старт
+if (IS_TOUCH) document.body.classList.add('touch');
 game = newGame();
 initThree();
 buildHud();
+computeDeskZoom();
 resetSceneVisuals();
 playAnim('IDLE_STAND');
 S.misha.pose = Object.assign(poseClone(POSE_STAND), { x: 0.55, z: 1.15 });
@@ -8080,6 +8193,14 @@ window.addEventListener('pointerdown', (e) => { if (e.target.closest && e.target
 window.addEventListener('pointermove', onPointerMove);
 window.addEventListener('keydown', onKeyDown);
 window.addEventListener('blur', () => { if (game.phase === 'play' && !game.paused) togglePause(); });
+window.addEventListener('touchend', onGestureEnd, { passive: true });
+window.addEventListener('click', onGestureEnd);
+document.addEventListener('visibilitychange', () => { if (document.hidden && game.phase === 'play' && !game.paused) togglePause(); }); // свернули приложение
+window.addEventListener('orientationchange', () => setTimeout(onResize, 300));
+document.getElementById('pauseBtn').addEventListener('pointerdown', (e) => { e.stopPropagation(); e.preventDefault(); if (game.phase === 'play') togglePause(); });
+document.getElementById('pauseOv').addEventListener('pointerdown', (e) => { e.stopPropagation(); if (game.paused) togglePause(); });
+document.addEventListener('gesturestart', (e) => e.preventDefault()); // iOS: без зума щипком
+document.addEventListener('contextmenu', (e) => e.preventDefault());
 requestAnimationFrame(tick);
 window.__game = () => game; // для отладки из консоли
 
